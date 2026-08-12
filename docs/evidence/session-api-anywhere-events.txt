@@ -1,0 +1,6 @@
+{"event":"session_api_started","adapter":"anywhere","port":18081}
+{
+  event: 'match_ready',
+  matchRequestId: 'mrq_3373be2d-0bc2-4e8e-afdd-718155cd63e3',
+  playerId: 'andrew'
+}

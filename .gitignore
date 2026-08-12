@@ -1,0 +1,33 @@
+# Unreal Engine generated output
+**/Binaries/
+**/Intermediate/
+**/Saved/
+**/DerivedDataCache/
+.vs/
+*.VC.db
+*.VC.opendb
+*.sln
+*.slnx
+
+# Large game assets stay local for this portfolio/code repository.
+# Add selected distributable assets later with Git LFS, if needed.
+game/ArthursTrials/Content/
+
+# Local build output and diagnostics
+build/
+logs/
+
+# Locally downloaded Unreal cross-compile installer (large, reproducible input)
+game/ArthursTrials/v*_clang-*-rockylinux*.exe
+
+# Local GameLift state (contains account- and fleet-specific values)
+scripts/GameLiftAnywhere.dev.psd1
+api/.env
+api/node_modules/
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+
+# Operating system files
+.DS_Store
+Thumbs.db

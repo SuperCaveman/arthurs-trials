@@ -1,0 +1,11 @@
+﻿# Arthur's Trials - sanitized GameLift Anywhere evidence
+# Source log: ArthursTrials.log
+# Exported: 2026-08-10T21:18:05.6799731Z
+
+[2026.08.10-21.15.51:464][  0]LogArthursTrialsGameServer: Initializing GameLift for an Anywhere compute.
+[2026.08.10-21.15.52:080][  0]LogGameLiftServerSDK: Networking outcome success. Init SDK success
+[2026.08.10-21.15.52:804][  0]LogArthursTrialsGameServer: GameLift ProcessReady succeeded on port 7778.
+[2026.08.10-21.16.02:735][300]LogGameLiftServerSDK: OnStartGameSession Received with raw data: {"Action":"CreateGameSession","GameSessionId":"arn:aws:gamelift:us-east-1::gamesession/<fleet-id>/custom-arthurs-trials-local/<game-session-id>","GameSessionName":"arthurs-trials-local-20260810211601","MaximumPlayerSessionCount":4,"GameProperties":{},"GameSessionData":null,"MatchmakerData":null,"IpAddress":"127.0.0.1","DnsName":null,"Port":7778,"Status":"ACTIVATING","StatusReason":null,"Location":"custom-arthurs-trials-local"}
+[2026.08.10-21.16.03:164][313]LogGameLiftServerSDK: Deserialized Message has Action: ActivateGameSession
+[2026.08.10-21.17.10:107][329]LogArthursTrialsGameServer: GameLift accepted a player session for 127.0.0.1.
+[2026.08.10-21.17.12:341][396]LogArthursTrialsGameServer: Bound validated GameLift player session to 127.0.0.1.

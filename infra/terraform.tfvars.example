@@ -1,0 +1,11 @@
+# Safe default: plan zero AWS resources.
+deployment_mode    = "local"
+allow_managed_demo = false
+aws_region         = "us-east-1"
+owner              = "andrew-bush"
+expires_at         = "UNSET"
+
+# Only after an approved, time-boxed test should these be changed together:
+# deployment_mode    = "demo"
+# allow_managed_demo = true
+# expires_at         = "2026-12-31T23:00:00Z"

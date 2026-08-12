@@ -1,0 +1,82 @@
+name: Validate portfolio foundation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arthurs-trials-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api-and-iac:
+    name: API tests and zero-resource IaC plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test local session API
+        working-directory: api
+        run: npm test
+
+      - name: Exercise the local API benchmark
+        run: node scripts/Run-SessionApiLoadTest.mjs
+
+      - name: Validate GameLift container template
+        run: node scripts/Test-GameLiftContainerTemplate.mjs
+
+      - name: Validate Linux server image recipe
+        run: node scripts/Test-LinuxServerContainerRecipe.mjs
+
+      - name: Test local match-results worker
+        working-directory: worker
+        run: npm test
+
+      - name: Build session API container
+        working-directory: api
+        run: docker build --tag arthurs-trials-session-api:ci .
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.6
+
+      - name: Format and validate Terraform
+        working-directory: infra
+        run: |
+          terraform init -backend=false -input=false
+          terraform fmt -check -recursive
+          terraform validate
+
+      - name: Prove the default IaC plan is resource-free
+        working-directory: infra
+        env:
+          # Deliberately fake values: local-mode provider validation is disabled
+          # and this workflow must never make AWS control-plane calls.
+          AWS_ACCESS_KEY_ID: local-ci-only
+          AWS_SECRET_ACCESS_KEY: local-ci-only
+          AWS_EC2_METADATA_DISABLED: "true"
+        run: |
+          set +e
+          terraform plan -input=false -lock=false -detailed-exitcode \
+            -out="$RUNNER_TEMP/arthurs-trials-local.tfplan"
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
+            exit "$status"
+          fi
+          terraform show -json "$RUNNER_TEMP/arthurs-trials-local.tfplan" \
+            > "$RUNNER_TEMP/arthurs-trials-local-plan.json"
+          node scripts/assert-local-plan.mjs \
+            "$RUNNER_TEMP/arthurs-trials-local-plan.json"

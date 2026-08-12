@@ -1,0 +1,14 @@
+{
+  "ContainerName": "arthurs-trials-server",
+  "ImageUri": "REPLACE_WITH_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/arthurs-trials-server:REPLACE_WITH_IMMUTABLE_TAG",
+  "PortConfiguration": {
+    "ContainerPortRanges": [
+      {
+        "FromPort": 7777,
+        "ToPort": 7779,
+        "Protocol": "UDP"
+      }
+    ]
+  },
+  "ServerSdkVersion": "5.6.0"
+}

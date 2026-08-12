@@ -1,0 +1,129 @@
+# Session API contract (planned control plane)
+
+Status: **local development implementation available; not deployed**
+
+The local GameLift Anywhere scripts prove the server-side lifecycle. This API is
+the production-shaped replacement for those scripts: it is the only component
+that receives an authenticated player request and calls GameLift placement or
+player-session APIs. Unreal clients never receive AWS credentials.
+
+## Trust boundary
+
+```text
+Unreal client + Cognito JWT
+        |
+        v
+Session API (private ECS/Fargate task behind public ALB)
+        |
+        +--> player/session data (private RDS)
+        |
+        +--> GameLift placement and player-session APIs
+        |
+        v
+Unreal dedicated server validates PlayerSessionId with GameLift
+```
+
+The API returns a connection address and a GameLift-issued `playerSessionId`.
+The client supplies that ID during the Unreal connection attempt. The server
+calls `AcceptPlayerSession` before admitting the player.
+
+## Endpoints
+
+### `POST /v1/matches`
+
+Requests a match for the authenticated player.
+
+Headers:
+
+```http
+Authorization: Bearer <Cognito access token>
+Idempotency-Key: <client-generated UUID>
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{
+  "mode": "co-op-defense",
+  "region": "us-east-1",
+  "party": ["player-123"]
+}
+```
+
+Rules:
+
+- The API derives the caller identity from the validated token; it does not
+  trust a player ID supplied in the body.
+- The caller may request only a party they own or are authorized to lead.
+- `Idempotency-Key` is stored with the request result. Retrying the same key
+  returns the original placement rather than creating extra player sessions.
+- The first implementation targets one region and four-player co-op. Region
+  selection and FlexMatch are intentionally deferred.
+
+Accepted response while placement is pending:
+
+```json
+{
+  "matchRequestId": "mrq_01J...",
+  "status": "PLACEMENT_PENDING",
+  "pollAfterSeconds": 2
+}
+```
+
+Completed response:
+
+```json
+{
+  "matchRequestId": "mrq_01J...",
+  "status": "READY",
+  "connection": {
+    "address": "203.0.113.10",
+    "port": 7777,
+    "playerSessionId": "psess-..."
+  },
+  "expiresAt": "2026-08-10T20:15:00Z"
+}
+```
+
+`playerSessionId` is a connection credential, not an AWS credential. It must
+not be written to client analytics, screenshots, or public logs.
+
+### `GET /v1/matches/{matchRequestId}`
+
+Returns the request state for its authenticated owner: `PLACEMENT_PENDING`,
+`READY`, `FAILED`, `CANCELLED`, or `EXPIRED`.
+
+### `DELETE /v1/matches/{matchRequestId}`
+
+Cancels a request only while no player session has been activated. The API
+records a cancellation reason for support and metrics.
+
+## Failure behavior
+
+| Condition | HTTP result | Client behavior | Operational signal |
+| --- | --- | --- | --- |
+| Invalid or expired JWT | `401` | Reauthenticate. | Authentication failure metric. |
+| Caller is not party owner | `403` | Do not retry automatically. | Authorization audit event. |
+| Same idempotency key | `200` with original result | Reuse the original response. | Idempotency-hit metric. |
+| No available capacity | `409` / `PLACEMENT_PENDING` | Poll within the supplied interval; show queue state. | Placement wait/failure metric. |
+| Placement failed | `503` | Offer retry with a new idempotency key after a backoff. | Placement-failure alarm. |
+| Player session expired | `410` | Request a new match connection. | Expired-session metric. |
+
+## Local-development mapping
+
+The local API now exposes the client-facing boundary. It defaults to a fake
+adapter for unit and HTTP-contract tests, and its `anywhere` adapter invokes
+the AWS CLI only from the API process. The existing scripts remain the local
+operator tools for starting and stopping the server process:
+
+| Planned API responsibility | Local helper |
+| --- | --- |
+| Start a server process | `Start-GameLiftAnywhereLocal.ps1` |
+| Create a game session and reserve the caller's player slot | `api/src/server.mjs` with `GAME_LIFT_ADAPTER=anywhere` |
+| End the session cleanly | `Stop-GameLiftAnywhereSession.ps1` |
+
+The Anywhere adapter has been exercised end-to-end against the local dedicated
+server; see the [redacted local proof](evidence/SESSION_API_ANYWHERE_PROOF.md).
+The local bearer token and in-memory store are development-only. Cognito JWT
+validation, RDS persistence, and an ECS task role remain planned work.
