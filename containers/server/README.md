@@ -39,7 +39,9 @@ AWS. The script can be used only after Unreal produces the staged package:
 The default process runs as a non-root user, writes logs inside the staged
 project directory, and declares UDP `7777`. The local smoke test launches this
 image with `-p 7777:7777/udp`, verifies that the server remains running, then
-removes the disposable container. The GameLift template keeps the
+removes the disposable container. The runtime image excludes Unreal `.debug`
+and `.sym` files; those remain in the archived package for postmortem
+symbolication. The GameLift template keeps the
 larger `7777-7779` reservation so a later explicit capacity decision can add
 processes without changing the external port contract.
 

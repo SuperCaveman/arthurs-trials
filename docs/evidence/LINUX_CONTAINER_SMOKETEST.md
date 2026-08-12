@@ -18,8 +18,10 @@ LinuxServer/
 ## Image contract and result
 
 The artifact was built into the local image `arthurs-trials-server:local` from
-Amazon Linux 2023. The verified image runs as non-root user `arthurs` and
-exposes only UDP `7777`.
+Amazon Linux 2023. The verified image runs as non-root user `arthurs`, exposes
+only UDP `7777`, and has a measured unpacked size of about 367 MB. Unreal
+`.debug` and `.sym` files remain in the archived package rather than being
+copied into the runtime image.
 
 A disposable container was started with a host mapping for UDP `7777`. The
 server stayed running through Unreal Engine startup, selected the
