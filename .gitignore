@@ -27,6 +27,8 @@ api/node_modules/
 infra/.terraform/
 infra/*.tfstate
 infra/*.tfstate.*
+infra/*.tfplan
+infra/*-plan.json
 
 # Operating system files
 .DS_Store
