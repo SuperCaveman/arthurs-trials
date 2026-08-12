@@ -2,7 +2,9 @@
 param(
     [int]$Port = 7778,
     [string]$ProcessId = "arthurs-trials-anywhere-$([guid]::NewGuid().ToString('N'))",
-    [switch]$DisablePlayerSessionValidation
+    [switch]$DisablePlayerSessionValidation,
+    [ValidateRange(0, 10)]
+    [int]$FailHealthChecks = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -44,6 +46,12 @@ $arguments = @(
 
 if (-not $DisablePlayerSessionValidation) {
     $arguments += '-GameLiftRequirePlayerSession'
+}
+
+if ($FailHealthChecks -gt 0) {
+    # This is intentionally explicit and bounded: it provides repeatable
+    # failure-recovery evidence without changing normal local-server behavior.
+    $arguments += "-GameLiftFailHealthChecks=$FailHealthChecks"
 }
 
 $server = Start-Process `

@@ -177,6 +177,15 @@ void AArthursTrialsGameMode::InitGameLift()
 		UE_LOG(LogArthursTrialsGameServer, Log, TEXT("GameLift player-session validation is required for client connections."));
 	}
 
+	FParse::Value(FCommandLine::Get(), TEXT("GameLiftFailHealthChecks="), RemainingForcedHealthCheckFailures);
+	RemainingForcedHealthCheckFailures = FMath::Max(0, RemainingForcedHealthCheckFailures);
+	if (RemainingForcedHealthCheckFailures > 0)
+	{
+		UE_LOG(LogArthursTrialsGameServer, Warning,
+			TEXT("Fault-injection mode enabled: the next %d GameLift health check(s) will fail, then health checks will recover."),
+			RemainingForcedHealthCheckFailures);
+	}
+
 	GameLiftProcessParameters = MakeShared<FProcessParameters>();
 	GameLiftProcessParameters->port = GetGameLiftPort();
 	GameLiftProcessParameters->logParameters.Add(FPaths::ProjectLogDir());
@@ -186,8 +195,17 @@ void AArthursTrialsGameMode::InitGameLift()
 		bGameLiftGameSessionActive = true;
 		GameLiftSdkModule->ActivateGameSession();
 	});
-	GameLiftProcessParameters->OnHealthCheck.BindLambda([]()
+	GameLiftProcessParameters->OnHealthCheck.BindLambda([this]()
 	{
+		if (RemainingForcedHealthCheckFailures > 0)
+		{
+			--RemainingForcedHealthCheckFailures;
+			UE_LOG(LogArthursTrialsGameServer, Warning,
+				TEXT("Fault injection: deliberately failed a GameLift health check. %d forced failure(s) remain."),
+				RemainingForcedHealthCheckFailures);
+			return false;
+		}
+
 		UE_LOG(LogArthursTrialsGameServer, Verbose, TEXT("GameLift health check passed."));
 		return true;
 	});

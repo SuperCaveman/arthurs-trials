@@ -40,6 +40,7 @@ private:
 	FGameLiftServerSDKModule* GameLiftSdkModule = nullptr;
 	bool bGameLiftPlayerSessionValidationRequired = false;
 	bool bGameLiftGameSessionActive = false;
+	int32 RemainingForcedHealthCheckFailures = 0;
 	TMap<FString, FString> PendingPlayerSessionsByAddress;
 	TMap<TWeakObjectPtr<AController>, FString> AcceptedPlayerSessions;
 };

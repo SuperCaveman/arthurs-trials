@@ -39,6 +39,9 @@ jobs:
       - name: Validate Linux server image recipe
         run: node scripts/Test-LinuxServerContainerRecipe.mjs
 
+      - name: Validate GameLift health fault-injection contract
+        run: node scripts/Test-GameLiftHealthFaultInjection.mjs
+
       - name: Test local match-results worker
         working-directory: worker
         run: npm test

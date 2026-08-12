@@ -1,6 +1,6 @@
 # Local GameLift Anywhere runbook
 
-Status: **safe to prepare now; execute after the player-session server binary is linked**
+Status: **verified local GameLift Anywhere flow; use conservative workstation settings**
 
 This runbook produces a small, reproducible evidence set for the portfolio
 without deploying managed AWS infrastructure. It uses one headless local server
@@ -13,8 +13,8 @@ and one reduced-load client only.
 2. Close Unreal Editor and any previous Arthur's Trials process.
 3. Confirm at least 12 GB physical memory is free before launching the client.
 4. Do not start a second client during this proof.
-5. Do not use this runbook until the newly linked server includes
-   `GameLiftRequirePlayerSession` support.
+5. Keep player-session credentials and Anywhere auth tokens out of screenshots
+   and logs intended for the public portfolio.
 
 ## 1. Start one Anywhere server
 
@@ -27,6 +27,20 @@ Expected log evidence:
 - `Initializing GameLift for an Anywhere compute`
 - `Init SDK success`
 - `GameLift ProcessReady succeeded on port 7778`
+
+### Optional reliability proof: bounded health-check failure
+
+For a controlled failure/recovery capture, start the server this way instead:
+
+```powershell
+./scripts/Start-GameLiftAnywhereLocal.ps1 -Port 7778 -FailHealthChecks 1
+```
+
+This explicit test-only switch makes the next health-check callback return
+unhealthy once, then returns to normal health on subsequent callbacks. Wait for
+the server log to show `Fault injection: deliberately failed a GameLift health
+check`, then continue with the same game-session and player-session flow below.
+Do not use this switch during the normal playable capture.
 
 ## 2. Create a game session
 
