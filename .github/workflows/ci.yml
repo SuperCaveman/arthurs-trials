@@ -86,6 +86,9 @@ jobs:
           npm ci
           npm test
 
+      - name: Verify results-worker resilience simulation
+        run: node scripts/Test-ResultsWorkerResilienceSimulation.mjs
+
       - name: Validate results-worker managed runtime template
         run: node scripts/Test-ResultsWorkerRuntimeContract.mjs
 

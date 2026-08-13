@@ -68,6 +68,10 @@ The bounded local control-plane load evidence is documented in the
 [placement simulation guide](docs/LOCAL_PLACEMENT_SIMULATION.md). It creates
 explicitly scoped CSV/JSON/SVG artifacts without calling AWS.
 
+The local retry and poison-message handling proof is documented in the
+[results-worker resilience guide](docs/RESULTS_WORKER_RESILIENCE.md). It
+exercises the worker's SQS decision path without creating a queue.
+
 A small local implementation of that boundary lives in
 [api/](api/README.md). It is tested with a fake adapter and can use the local
 GameLift Anywhere fleet when explicitly configured; it is not deployed.
