@@ -2,7 +2,9 @@
 
 This is a dependency-free, local implementation of the session boundary in
 [`docs/SESSION_API_CONTRACT.md`](../docs/SESSION_API_CONTRACT.md). It is not an
-internet-facing production service and does not validate Cognito JWTs yet.
+internet-facing production service. Its default local mode accepts only local
+development tokens; an opt-in Cognito-compatible JWT verifier is tested with a
+locally generated RSA key and does not require an AWS user pool.
 
 ## What it proves locally
 
@@ -13,6 +15,8 @@ internet-facing production service and does not validate Cognito JWTs yet.
 - only the API adapter calls GameLift; and
 - clients receive only address, port, and a short-lived player-session
   credential.
+- an optional API path verifies a signed Cognito access token's issuer, client
+  ID, expiry, token type, signature, and JWKS key ID before placement.
 
 ## Run without AWS
 
@@ -37,6 +41,23 @@ Invoke-RestMethod http://127.0.0.1:8080/v1/matches -Method Post -Headers $header
   party = @('andrew')
 } | ConvertTo-Json)
 ```
+
+## Cognito-compatible verifier (local test only)
+
+The `cognito` mode is disabled unless selected explicitly. It fetches only the
+configured issuer's JWKS endpoint and verifies RS256 access tokens; it does not
+create a user pool or make GameLift calls by itself.
+
+```powershell
+$env:SESSION_API_AUTH_MODE = 'cognito'
+$env:COGNITO_ISSUER = 'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_REPLACE_ME'
+$env:COGNITO_CLIENT_ID = 'REPLACE_WITH_PUBLIC_CLIENT_ID'
+npm start
+```
+
+Do not put a JWT, player-session ID, or user email in a screenshot or log. The
+repository test generates an ephemeral RSA key and proves valid and wrong-client
+tokens locally; a live Cognito sign-in remains an opt-in managed-demo task.
 
 ## Connect to the local GameLift Anywhere fleet
 

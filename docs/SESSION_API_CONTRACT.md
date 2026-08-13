@@ -125,5 +125,9 @@ operator tools for starting and stopping the server process:
 
 The Anywhere adapter has been exercised end-to-end against the local dedicated
 server; see the [redacted local proof](evidence/SESSION_API_ANYWHERE_PROOF.md).
-The local bearer token and in-memory store are development-only. Cognito JWT
-validation, RDS persistence, and an ECS task role remain planned work.
+The local bearer token and in-memory store are development-only. A
+Cognito-compatible RS256/JWKS verifier is now locally tested with generated
+keys: it checks access-token issuer, client ID, expiry, token use, signing key,
+and signature before creating a match. No live user pool or sign-in has been
+tested, so Cognito integration, RDS persistence, and an ECS task role remain
+managed-demo work.
