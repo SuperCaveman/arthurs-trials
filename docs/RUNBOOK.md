@@ -126,15 +126,30 @@ $matchId = "mrq_$([guid]::NewGuid())"
   -XpAward 125
 ```
 
-3. After the server logs `Authoritative match-completion event published`, run:
+3. After the server logs `Authoritative match-completion event published`, run
+the durable local worker. The store records the reward and event receipt
+together, so retain the same path if you restart the worker:
 
 ```powershell
+$env:RESULTS_STORE = 'file'
+$env:RESULTS_STORE_PATH = Join-Path (Resolve-Path ./logs) 'match-results-worker-state.json'
 node ./worker/src/outbox.mjs $outbox
 ```
 
 Expected proof: one `PROCESSED` result, an event file moved under
-`$outbox/processed/`, and no client ability to submit a result. End the local
-session with `Stop-GameLiftAnywhereSession.ps1` as usual.
+`$outbox/processed/`, and no client ability to submit a result. To demonstrate
+at-least-once safety, copy the processed JSON back to `$outbox` with a distinct
+filename and run the same command again. It should return `DUPLICATE`; the
+existing reward receipt stays unchanged. End the local session with
+`Stop-GameLiftAnywhereSession.ps1` as usual.
+
+### Recording moment
+
+Start recording immediately before creating the game session. Capture: the
+server lifecycle reaching `ProcessReady`, the terminal's first `PROCESSED`
+result, the second `DUPLICATE` result after the worker restart/replay, then the
+graceful termination. Do not show the raw server command line, game-session ID,
+or player-session credentials.
 
 ## Evidence checklist
 
