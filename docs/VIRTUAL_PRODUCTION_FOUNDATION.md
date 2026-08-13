@@ -94,6 +94,25 @@ verified workflow supplies the Processing → Validated → Approved for Stage
 contract today. A future approved build job can consume the intake event to
 run Unreal package validation before it writes the approval record.
 
+## Approval authorization proof
+
+The local authorization proof allows only `stage-supervisor` or
+`production-manager` to approve a validated version for the stage; a request
+from `remote-artist` is rejected. It records the asset version, manifest
+digest, approver, target, timestamp, and the explicit approved delivery path:
+
+```powershell
+node ./scripts/Run-VirtualProductionApproval.mjs `
+  --manifest ./virtual-production/examples/Castle_Set_v12.asset-manifest.json `
+  --approved-by stage-supervisor `
+  --output ./logs/virtual-production/Castle_Set_v12-approval.json
+```
+
+This is a local role-policy simulation rather than a login flow. The optional
+AWS template maps it to a federated approval identity, an auditable DynamoDB
+record, and a separate read-only stage role. No identity, record, object, or
+stage workstation exists in AWS.
+
 ## Recording-friendly recovery view
 
 After generating the local workflow and rollback JSON, create one static view

@@ -59,6 +59,9 @@ jobs:
       - name: Verify virtual-production rollback workflow
         run: node scripts/Test-VirtualProductionRollback.mjs
 
+      - name: Verify virtual-production approval authorization
+        run: node scripts/Test-VirtualProductionApproval.mjs
+
       - name: Validate virtual-production Terraform contract
         run: node scripts/Test-VirtualProductionTerraformContract.mjs
 
