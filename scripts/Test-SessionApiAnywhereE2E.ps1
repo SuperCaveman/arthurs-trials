@@ -2,7 +2,7 @@
 param(
     [string]$ApiBaseUrl = 'http://127.0.0.1:18081',
     [string]$PlayerId = 'andrew',
-    [string]$ClientPath = 'D:\AWS Projects\ArthursTrials\build\WindowsClient\ArthursTrials.exe'
+    [string]$ClientPath = 'D:\AWS Projects\ArthursTrials\build\WindowsClient\ArthursTrials\Binaries\Win64\ArthursTrialsClient.exe'
 )
 
 $ErrorActionPreference = 'Stop'

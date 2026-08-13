@@ -65,7 +65,7 @@ in public screenshots or repository files.
 ## 4. Run one constrained client
 
 ```powershell
-& ./build/WindowsClient/ArthursTrials.exe "$($player.Address)?PlayerSessionId=$($player.PlayerSessionId)" -windowed -ResX=960 -ResY=540 -fps=30
+& ./build/WindowsClient/ArthursTrials/Binaries/Win64/ArthursTrialsClient.exe "$($player.Address)?PlayerSessionId=$($player.PlayerSessionId)" -windowed -ResX=960 -ResY=540 -fps=30
 ```
 
 Expected server log evidence:

@@ -183,7 +183,7 @@ reserves a player slot and returns a short-lived connection credential. Pass its
 
 ```powershell
 $player = ./scripts/New-GameLiftAnywherePlayerSession.ps1
-& ./build/WindowsClient/ArthursTrials.exe "$($player.Address)?PlayerSessionId=$($player.PlayerSessionId)" -windowed -ResX=960 -ResY=540 -fps=30
+& ./build/WindowsClient/ArthursTrials/Binaries/Win64/ArthursTrialsClient.exe "$($player.Address)?PlayerSessionId=$($player.PlayerSessionId)" -windowed -ResX=960 -ResY=540 -fps=30
 ```
 
 For a strictly offline local-server check only, start the server with
