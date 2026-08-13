@@ -46,6 +46,24 @@ concurrent-writer protection, backup, encryption, cross-instance sharing, SQS,
 or RDS. The code interface models the future transaction boundary: awarding all
 participants and recording the event ID must succeed together or not at all.
 
+## Container artifact
+
+The worker has a small non-root local container image. It defaults to the
+in-memory store, so building and running the image does not contact AWS or
+create a queue/database. Standard output contains one JSON result record per
+input event, which lets an automation consume the result without mixing it
+with diagnostic logs:
+
+```powershell
+docker build -t arthurs-trials-results-worker:local .
+'{"eventType":"match.completed","eventId":"17ea8ce7-6f3f-4b2a-9c93-5c3ed89f4691","matchId":"mrq_17ea8ce7-6f3f-4b2a-9c93-5c3ed89f4691","participants":["andrew"],"xpAward":125,"completedAt":"2026-08-13T15:00:00.000Z"}' |
+  docker run --rm -i arthurs-trials-results-worker:local
+```
+
+The future managed path will use this artifact pattern in ECR and a private
+worker task. It will consume SQS through a least-privilege task role and write
+to PostgreSQL transactionally; neither service is deployed by this package.
+
 ## Test
 
 ```powershell

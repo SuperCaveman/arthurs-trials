@@ -62,7 +62,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const store = storeName === 'file'
     ? createFileResultsStore({ path: process.env.RESULTS_STORE_PATH })
     : createInMemoryResultsStore();
-  const worker = createResultsWorker({ store });
+  // Keep stdout to one result record per input event. Infrastructure runners
+  // can then consume it safely without parsing diagnostic logs as data.
+  const quietLogger = { info() {} };
+  const worker = createResultsWorker({ store, logger: quietLogger });
   const input = createInterface({ input: process.stdin, crlfDelay: Infinity });
 
   for await (const line of input) {
