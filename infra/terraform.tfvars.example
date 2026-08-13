@@ -4,8 +4,18 @@ allow_managed_demo = false
 aws_region         = "us-east-1"
 owner              = "andrew-bush"
 expires_at         = "UNSET"
+enable_identity    = false
+enable_github_actions_oidc = false
+github_repository  = "SuperCaveman/arthurs-trials"
+
+# Required only when enable_github_actions_oidc is true. Use an existing,
+# account-level GitHub Actions OIDC provider rather than creating a duplicate.
+github_actions_oidc_provider_arn = ""
 
 # Only after an approved, time-boxed test should these be changed together:
 # deployment_mode    = "demo"
 # allow_managed_demo = true
 # expires_at         = "2026-12-31T23:00:00Z"
+# enable_identity    = true
+# enable_github_actions_oidc = true
+# github_actions_oidc_provider_arn = "arn:aws:iam::<account-id>:oidc-provider/token.actions.githubusercontent.com"

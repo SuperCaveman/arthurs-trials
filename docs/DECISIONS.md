@@ -94,3 +94,21 @@ keeping the intended platform path inspectable.
 
 **Trade-off:** The later container design must make an explicit
 endpoint-versus-NAT decision before it can be deployed in private subnets.
+
+## ADR-007 — Establish identity and CI trust without standing cloud access
+
+**Status:** Accepted
+
+**Decision:** Keep Cognito and GitHub Actions OIDC as opt-in Terraform modules
+behind the same managed-demo gate as the network. The GitHub trust role is
+bound to this repository's `main` branch and starts with no permissions.
+
+**Why:** The project needs a credible identity and delivery boundary without
+adding user-management work, stored AWS keys, or an always-available deployment
+path before the managed architecture is ready. A permissionless trust role
+makes it explicit that a future release must earn narrowly scoped access per
+resource module.
+
+**Trade-off:** No live Cognito sign-in or OIDC deployment exists yet. The local
+bearer-token adapter remains development-only, and no public material may
+describe the templates as deployed authentication or CI/CD delivery.

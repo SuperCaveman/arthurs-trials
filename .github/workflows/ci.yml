@@ -48,6 +48,9 @@ jobs:
       - name: Validate local operations dashboard sanitization
         run: node scripts/Test-LocalOperationsDashboard.mjs
 
+      - name: Validate security and delivery foundation
+        run: node scripts/Test-SecurityDeliveryFoundation.mjs
+
       - name: Test local match-results worker
         working-directory: worker
         run: npm test

@@ -38,3 +38,32 @@ variable "vpc_cidr" {
   type        = string
   default     = "10.42.0.0/16"
 }
+
+variable "enable_identity" {
+  description = "Opt in to the Cognito foundation only during an approved managed demo."
+  type        = bool
+  default     = false
+}
+
+variable "enable_github_actions_oidc" {
+  description = "Opt in to the permissionless GitHub Actions OIDC trust role only during an approved managed demo."
+  type        = bool
+  default     = false
+}
+
+variable "github_repository" {
+  description = "GitHub repository allowed in the future OIDC trust policy."
+  type        = string
+  default     = "SuperCaveman/arthurs-trials"
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", var.github_repository))
+    error_message = "github_repository must use owner/repository form."
+  }
+}
+
+variable "github_actions_oidc_provider_arn" {
+  description = "Existing AWS IAM GitHub Actions OIDC provider ARN; required only when its trust role is enabled."
+  type        = string
+  default     = ""
+}

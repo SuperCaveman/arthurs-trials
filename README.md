@@ -80,8 +80,11 @@ The Anywhere free tier currently includes 3,000 game-session placements and 500,
 ![Arthur's Trials architecture](docs/assets/arthurs-trials-architecture.png)
 
 The [default-off Terraform foundation](infra/README.md) validates the future
-network path without creating cloud resources. The exact capture sequence for
-the portfolio demo is in the [video plan](docs/DEMO_VIDEO_PLAN.md).
+network, identity, and delivery-trust paths without creating cloud resources.
+The [security and delivery foundation](docs/SECURITY_DELIVERY_FOUNDATION.md)
+explains the Cognito and GitHub OIDC templates and their deliberately
+permissionless/default-off boundary. The exact capture sequence for the
+portfolio demo is in the [video plan](docs/DEMO_VIDEO_PLAN.md).
 
 The included GitHub Actions workflow is a **validation-only** quality gate: it
 tests the local API and proves the default Terraform plan contains no resources.
