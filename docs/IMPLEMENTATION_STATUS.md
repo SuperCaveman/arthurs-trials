@@ -24,7 +24,7 @@ Last reviewed: 2026-08-12
 | Terraform network foundation | **Validated locally; not deployed** | The `infra/` root has a zero-resource local default. The VPC module is opt-in, requires an explicit demo flag and expiry tag, and deliberately has no NAT gateway by default. No VPC, ECS, RDS, or managed fleet was created. | Add remaining demo modules only for a short, tagged demo window. |
 | CI quality gate | **Configured; awaiting first remote run** | GitHub Actions runs the API tests plus Terraform formatting, validation, and a zero-resource-plan assertion. It uses deliberately fake credentials in local mode and has no deploy step. | Push the repository and capture the first green Actions run. |
 | Managed hosting | **Planned** | The portfolio blueprint documents the intended hosted path, but no managed deployment exists. | Add after the local demo is reliably reproducible. |
-| Observability / dashboards | **Planned** | Server logs currently provide local lifecycle evidence. | Add structured events and CloudWatch assets only with the opt-in managed demo. |
+| Observability / dashboards | **Local dashboard verified; CloudWatch planned** | A sanitized static dashboard derives real GameLift lifecycle, authoritative result, worker-processing, and graceful-shutdown evidence from local logs/outbox data. See the [dashboard guide](LOCAL_OPERATIONS_DASHBOARD.md). | Add structured cloud logs, CloudWatch dashboard, and alarms only with the opt-in managed demo. |
 
 ## Current low-cost operating mode
 

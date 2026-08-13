@@ -54,6 +54,11 @@ The full local API-to-GameLift-to-Unreal path is also
 The planned 60–90 second portfolio capture is in the
 [demo video plan](docs/DEMO_VIDEO_PLAN.md).
 
+The recording-friendly, sanitized local operations view is documented in the
+[local operations dashboard guide](docs/LOCAL_OPERATIONS_DASHBOARD.md). It
+derives evidence from a completed local proof; it is not presented as a
+deployed CloudWatch dashboard.
+
 For the safe, one-client local GameLift proof and a sanitized evidence export,
 follow the [local runbook](docs/RUNBOOK.md).
 

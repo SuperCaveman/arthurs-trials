@@ -45,6 +45,9 @@ jobs:
       - name: Validate authoritative match-results contract
         run: node scripts/Test-AuthoritativeMatchResultsContract.mjs
 
+      - name: Validate local operations dashboard sanitization
+        run: node scripts/Test-LocalOperationsDashboard.mjs
+
       - name: Test local match-results worker
         working-directory: worker
         run: npm test
