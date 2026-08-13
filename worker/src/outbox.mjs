@@ -52,6 +52,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const store = storeName === 'file'
     ? (await import('./results-store.mjs')).createFileResultsStore({ path: process.env.RESULTS_STORE_PATH })
     : (await import('./results-store.mjs')).createInMemoryResultsStore();
-  const results = await drainMatchResultsOutbox({ outboxDirectory, worker: createResultsWorker({ store }) });
+  // stdout remains one machine-readable summary, so a recording can safely
+  // pipe it into PowerShell without showing per-event identifiers.
+  const quietLogger = { info() {}, error() {} };
+  const results = await drainMatchResultsOutbox({
+    outboxDirectory,
+    worker: createResultsWorker({ store, logger: quietLogger }),
+    logger: quietLogger,
+  });
   process.stdout.write(`${JSON.stringify({ event: 'match_results_outbox_drained', count: results.length, results })}\n`);
 }

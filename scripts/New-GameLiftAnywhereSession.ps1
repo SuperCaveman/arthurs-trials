@@ -48,7 +48,15 @@ if ($gameProperties.Count -gt 0) {
 $awsArguments += '--output'
 $awsArguments += 'json'
 
-$session = aws @awsArguments | ConvertFrom-Json
+$sessionJson = aws @awsArguments
+if ($LASTEXITCODE -ne 0) {
+    throw 'GameLift could not create a session. Confirm the local server is ProcessReady and that no other session is active.'
+}
+
+$session = $sessionJson | ConvertFrom-Json
+if ($null -eq $session.GameSession) {
+    throw 'GameLift did not return a game session.'
+}
 
 [pscustomobject]@{
     GameSessionId = $session.GameSession.GameSessionId

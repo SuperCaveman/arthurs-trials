@@ -25,11 +25,13 @@ assert.match(gameMode, /MatchResultsCompleteAfterSeconds=/);
 assert.match(outbox, /createResultsWorker/);
 assert.match(outbox, /match_result_outbox_processed/);
 assert.match(outbox, /match_result_outbox_rejected/);
+assert.match(outbox, /const quietLogger = \{ info\(\) \{\}, error\(\) \{\} \}/);
 assert.match(resultsStore, /createFileResultsStore/);
 assert.match(resultsStore, /processedEvents/);
 assert.match(resultsStore, /await rename\(temporaryPath, path\)/);
 assert.match(sessionHelper, /Key=matchId,Value=\$MatchId/);
 assert.match(sessionHelper, /Key=participants,Value=\$\(\$Participants -join ','\)/);
+assert.match(sessionHelper, /if \(\$LASTEXITCODE -ne 0\)/);
 assert.match(launcher, /MatchResultsCompleteAfterSeconds/);
 assert.match(launcher, /MatchResultsOutboxDir=`"\$MatchResultsOutboxDir`"/);
 
