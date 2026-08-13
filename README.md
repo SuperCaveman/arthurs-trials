@@ -114,6 +114,9 @@ follow the [local runbook](docs/RUNBOOK.md).
 The major cost, security, and delivery trade-offs are recorded in
 [architecture decisions](docs/DECISIONS.md).
 
+The cross-workload trust boundaries and verified-vs-planned controls are in the
+[threat model](docs/THREAT_MODEL.md).
+
 ## Cost posture
 
 - Develop and iterate with **GameLift Servers Anywhere** on the workstation.
