@@ -16,8 +16,10 @@ results path. It is not a deployed AWS service.
 }
 ```
 
-The authoritative dedicated server is the future producer. Clients do not
-submit completion events or determine rewards.
+The dedicated server is the authoritative local producer. It receives the
+match request ID, party, and award through GameLift game-session properties and
+publishes the event to a local file outbox only when its match-completion timer
+fires. Clients do not submit completion events or determine rewards.
 
 ## Required behavior
 
@@ -28,6 +30,25 @@ submit completion events or determine rewards.
 - A later delivery with the same `eventId` returns `DUPLICATE` and grants
   nothing further.
 - Invalid events are rejected before any reward mutation.
+
+## Local transport boundary
+
+The file outbox is deliberately a narrow local substitute for SQS. The server
+writes a complete JSON document to a temporary file and then moves it into the
+outbox. The worker moves successfully handled events to `processed/` and bad
+payloads to `rejected/`. It is useful for proving producer/consumer behavior,
+but it is not durable, distributed, or a production queue.
+
+The GameLift Anywhere adapter creates the game session with these server-only
+properties:
+
+- `matchId`
+- `participants`
+- `xpAward`
+
+The public Session API response still returns only connection information and a
+short-lived player-session credential. It does not expose an AWS credential or
+give the client permission to create results.
 
 ## Planned managed implementation
 

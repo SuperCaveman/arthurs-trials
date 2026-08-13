@@ -14,6 +14,8 @@ public class ArthursTrials : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
+			"Json",
+			"JsonUtilities",
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",

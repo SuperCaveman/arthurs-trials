@@ -4,7 +4,10 @@ param(
     [string]$ProcessId = "arthurs-trials-anywhere-$([guid]::NewGuid().ToString('N'))",
     [switch]$DisablePlayerSessionValidation,
     [ValidateRange(0, 10)]
-    [int]$FailHealthChecks = 0
+    [int]$FailHealthChecks = 0,
+    [ValidateRange(0, 3600)]
+    [int]$MatchResultsCompleteAfterSeconds = 0,
+    [string]$MatchResultsOutboxDir
 )
 
 $ErrorActionPreference = 'Stop'
@@ -52,6 +55,17 @@ if ($FailHealthChecks -gt 0) {
     # This is intentionally explicit and bounded: it provides repeatable
     # failure-recovery evidence without changing normal local-server behavior.
     $arguments += "-GameLiftFailHealthChecks=$FailHealthChecks"
+}
+
+if ($MatchResultsCompleteAfterSeconds -gt 0) {
+    $arguments += "-MatchResultsCompleteAfterSeconds=$MatchResultsCompleteAfterSeconds"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($MatchResultsOutboxDir)) {
+    # The project path contains spaces. Preserve the outbox as one Unreal
+    # command-line value so the server cannot silently fall back to a partial
+    # directory such as D:\AWS.
+    $arguments += "-MatchResultsOutboxDir=`"$MatchResultsOutboxDir`""
 }
 
 $server = Start-Process `

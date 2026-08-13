@@ -2,12 +2,20 @@
 
 #include "ArthursTrialsGameMode.h"
 
+#include "Async/Async.h"
+#include "Dom/JsonObject.h"
 #include "Engine/NetConnection.h"
 #include "GameFramework/PlayerController.h"
+#include "HAL/FileManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CommandLine.h"
+#include "Misc/DateTime.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Guid.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 
 #if WITH_GAMELIFT
 #include "GameLiftServerSDK.h"
@@ -15,6 +23,27 @@
 #endif
 
 DEFINE_LOG_CATEGORY(LogArthursTrialsGameServer);
+
+namespace
+{
+	bool IsValidResultsPlayerId(const FString& PlayerId)
+	{
+		if (PlayerId.Len() < 3 || PlayerId.Len() > 64)
+		{
+			return false;
+		}
+
+		for (const TCHAR Character : PlayerId)
+		{
+			if (!(FChar::IsAlnum(Character) || Character == TEXT('.') || Character == TEXT('_') || Character == TEXT('-')))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+}
 
 AArthursTrialsGameMode::AArthursTrialsGameMode()
 {
@@ -135,6 +164,114 @@ int32 AArthursTrialsGameMode::GetGameLiftPort() const
 	return Port;
 }
 
+void AArthursTrialsGameMode::ConfigureMatchResults(const TMap<FString, FString>& GameProperties)
+{
+	ActiveMatchRequestId.Reset();
+	ActiveMatchParticipants.Reset();
+	bMatchResultsEmitted = false;
+
+	const FString* MatchId = GameProperties.Find(TEXT("matchId"));
+	const FString* Participants = GameProperties.Find(TEXT("participants"));
+	if (MatchId == nullptr || Participants == nullptr || !MatchId->StartsWith(TEXT("mrq_")))
+	{
+		UE_LOG(LogArthursTrialsGameServer, Log, TEXT("No match-results event is configured for this session."));
+		return;
+	}
+
+	Participants->ParseIntoArray(ActiveMatchParticipants, TEXT(","), true);
+	TSet<FString> UniqueParticipants;
+	bool bParticipantsAreValid = true;
+	for (const FString& PlayerId : ActiveMatchParticipants)
+	{
+		UniqueParticipants.Add(PlayerId);
+		bParticipantsAreValid &= IsValidResultsPlayerId(PlayerId);
+	}
+	if (ActiveMatchParticipants.Num() < 1 || ActiveMatchParticipants.Num() > 4 ||
+		!bParticipantsAreValid ||
+		UniqueParticipants.Num() != ActiveMatchParticipants.Num())
+	{
+		UE_LOG(LogArthursTrialsGameServer, Error,
+			TEXT("GameLift game-session properties contain invalid match-results participants; no result event will be emitted."));
+		ActiveMatchParticipants.Reset();
+		return;
+	}
+
+	ActiveMatchRequestId = *MatchId;
+	if (const FString* XpAward = GameProperties.Find(TEXT("xpAward")))
+	{
+		MatchResultsXpAward = FMath::Clamp(FCString::Atoi(**XpAward), 0, 10000);
+	}
+
+	FParse::Value(FCommandLine::Get(), TEXT("MatchResultsCompleteAfterSeconds="), MatchResultsCompletionDelaySeconds);
+	FParse::Value(FCommandLine::Get(), TEXT("MatchResultsOutboxDir="), MatchResultsOutboxDirectory);
+	MatchResultsCompletionDelaySeconds = FMath::Clamp(MatchResultsCompletionDelaySeconds, 0, 3600);
+	if (MatchResultsOutboxDirectory.IsEmpty())
+	{
+		MatchResultsOutboxDirectory = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("MatchResultsOutbox"));
+	}
+
+	if (MatchResultsCompletionDelaySeconds > 0)
+	{
+		GetWorldTimerManager().SetTimer(MatchResultsCompletionTimer, this,
+			&AArthursTrialsGameMode::EmitAuthoritativeMatchCompletion,
+			MatchResultsCompletionDelaySeconds, false);
+		UE_LOG(LogArthursTrialsGameServer, Log,
+			TEXT("Authoritative match-completion event is scheduled after %d second(s)."),
+			MatchResultsCompletionDelaySeconds);
+	}
+	else
+	{
+		UE_LOG(LogArthursTrialsGameServer, Log,
+			TEXT("Match-results metadata received; automatic completion is disabled until -MatchResultsCompleteAfterSeconds is supplied."));
+	}
+}
+
+void AArthursTrialsGameMode::EmitAuthoritativeMatchCompletion()
+{
+	if (bMatchResultsEmitted || !bGameLiftGameSessionActive || ActiveMatchRequestId.IsEmpty() || ActiveMatchParticipants.IsEmpty())
+	{
+		return;
+	}
+
+	const FString EventId = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
+	const TSharedRef<FJsonObject> Event = MakeShared<FJsonObject>();
+	Event->SetStringField(TEXT("eventType"), TEXT("match.completed"));
+	Event->SetStringField(TEXT("eventId"), EventId);
+	Event->SetStringField(TEXT("matchId"), ActiveMatchRequestId);
+	Event->SetNumberField(TEXT("xpAward"), MatchResultsXpAward);
+	Event->SetStringField(TEXT("completedAt"), FDateTime::UtcNow().ToIso8601());
+
+	TArray<TSharedPtr<FJsonValue>> Participants;
+	for (const FString& PlayerId : ActiveMatchParticipants)
+	{
+		Participants.Add(MakeShared<FJsonValueString>(PlayerId));
+	}
+	Event->SetArrayField(TEXT("participants"), Participants);
+
+	FString Payload;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Payload);
+	if (!FJsonSerializer::Serialize(Event, Writer))
+	{
+		UE_LOG(LogArthursTrialsGameServer, Error, TEXT("Unable to serialize the authoritative match-completion event."));
+		return;
+	}
+
+	IFileManager::Get().MakeDirectory(*MatchResultsOutboxDirectory, true);
+	const FString FinalPath = FPaths::Combine(MatchResultsOutboxDirectory, EventId + TEXT(".json"));
+	const FString TemporaryPath = FinalPath + TEXT(".tmp");
+	if (!FFileHelper::SaveStringToFile(Payload, *TemporaryPath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM) ||
+		!IFileManager::Get().Move(*FinalPath, *TemporaryPath, true, true))
+	{
+		UE_LOG(LogArthursTrialsGameServer, Error, TEXT("Unable to publish the authoritative match-completion event to the local outbox."));
+		return;
+	}
+
+	bMatchResultsEmitted = true;
+	UE_LOG(LogArthursTrialsGameServer, Log,
+		TEXT("Authoritative match-completion event published to the local outbox for %d participant(s)."),
+		ActiveMatchParticipants.Num());
+}
+
 void AArthursTrialsGameMode::InitGameLift()
 {
 #if WITH_GAMELIFT
@@ -182,7 +319,7 @@ void AArthursTrialsGameMode::InitGameLift()
 	if (RemainingForcedHealthCheckFailures > 0)
 	{
 		UE_LOG(LogArthursTrialsGameServer, Warning,
-			TEXT("Fault-injection mode enabled: the next %d GameLift health check(s) will fail, then health checks will recover."),
+			TEXT("Fault-injection mode enabled: the next %d GameLift health check(s) will fail; GameLift should terminate this process and a replacement should recover."),
 			RemainingForcedHealthCheckFailures);
 	}
 
@@ -192,8 +329,24 @@ void AArthursTrialsGameMode::InitGameLift()
 	GameLiftProcessParameters->OnStartGameSession.BindLambda([this](Aws::GameLift::Server::Model::GameSession InGameSession)
 	{
 		UE_LOG(LogArthursTrialsGameServer, Log, TEXT("GameLift requested session activation: %s"), *FString(InGameSession.GetGameSessionId()));
-		bGameLiftGameSessionActive = true;
+		TMap<FString, FString> GameProperties;
+		int GamePropertyCount = 0;
+		const Aws::GameLift::Server::Model::GameProperty* SessionProperties = InGameSession.GetGameProperties(GamePropertyCount);
+		for (int PropertyIndex = 0; SessionProperties != nullptr && PropertyIndex < GamePropertyCount; ++PropertyIndex)
+		{
+			const Aws::GameLift::Server::Model::GameProperty& Property = SessionProperties[PropertyIndex];
+			GameProperties.Add(FString(Property.GetKey()), FString(Property.GetValue()));
+		}
 		GameLiftSdkModule->ActivateGameSession();
+
+		// The GameLift SDK invokes this callback from one of its networking
+		// threads. Unreal session state and timers must be configured on the
+		// game thread before a match can emit an authoritative result event.
+		AsyncTask(ENamedThreads::GameThread, [this, GameProperties = MoveTemp(GameProperties)]() mutable
+		{
+			bGameLiftGameSessionActive = true;
+			ConfigureMatchResults(GameProperties);
+		});
 	});
 	GameLiftProcessParameters->OnHealthCheck.BindLambda([this]()
 	{

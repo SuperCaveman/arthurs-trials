@@ -101,6 +101,41 @@ The exporter filters the lifecycle lines and redacts AWS account IDs, game
 session IDs, player session IDs, and auth-token values before writing an
 evidence text file under `logs/evidence/`.
 
+## Optional: authoritative match-results proof
+
+This local proof uses a file outbox in place of the planned SQS queue. It does
+not create SQS, RDS, ECS, or managed game-server capacity.
+
+1. Start the dedicated server with an explicit short completion delay and an
+   outbox folder:
+
+```powershell
+$outbox = Join-Path (Resolve-Path ./logs) 'match-results-outbox-demo'
+./scripts/Start-GameLiftAnywhereLocal.ps1 `
+  -MatchResultsCompleteAfterSeconds 20 `
+  -MatchResultsOutboxDir $outbox
+```
+
+2. Create the GameLift session with server-only match metadata:
+
+```powershell
+$matchId = "mrq_$([guid]::NewGuid())"
+./scripts/New-GameLiftAnywhereSession.ps1 `
+  -MatchId $matchId `
+  -Participants @('andrew') `
+  -XpAward 125
+```
+
+3. After the server logs `Authoritative match-completion event published`, run:
+
+```powershell
+node ./worker/src/outbox.mjs $outbox
+```
+
+Expected proof: one `PROCESSED` result, an event file moved under
+`$outbox/processed/`, and no client ability to submit a result. End the local
+session with `Stop-GameLiftAnywhereSession.ps1` as usual.
+
 ## Evidence checklist
 
 - Screenshot: GameLift Anywhere server `ProcessReady` and health state.

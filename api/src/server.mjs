@@ -137,7 +137,7 @@ export function createAnywhereGameLiftAdapter(environment = process.env) {
   const location = requiredEnvironment('GAME_LIFT_LOCATION', environment);
 
   return {
-    async createMatch({ playerId, maximumPlayerSessions }) {
+    async createMatch({ playerId, maximumPlayerSessions, matchRequestId, party, xpAward }) {
       const gameSession = (await awsJson([
         'gamelift', 'create-game-session',
         '--region', region,
@@ -145,6 +145,10 @@ export function createAnywhereGameLiftAdapter(environment = process.env) {
         '--location', location,
         '--name', `api-local-${randomUUID()}`,
         '--maximum-player-session-count', String(maximumPlayerSessions),
+        '--game-properties',
+        `Key=matchId,Value=${matchRequestId}`,
+        `Key=participants,Value=${party.join(',')}`,
+        `Key=xpAward,Value=${xpAward}`,
         '--output', 'json',
       ])).GameSession;
 
@@ -199,12 +203,16 @@ export function createSessionApi({ adapter = createFakeGameLiftAdapter(), logger
 
         const body = await readJson(request);
         validateMatchRequest(body, principal);
+        const matchRequestId = `mrq_${randomUUID()}`;
         const connection = await adapter.createMatch({
           playerId: principal.id,
           maximumPlayerSessions: MAX_PARTY_SIZE,
+          matchRequestId,
+          party: body.party,
+          xpAward: 125,
         });
         const match = {
-          matchRequestId: `mrq_${randomUUID()}`,
+          matchRequestId,
           status: 'READY',
           connection,
           expiresAt: connection.expiresAt,

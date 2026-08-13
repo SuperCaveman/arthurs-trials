@@ -5,14 +5,16 @@ import { createSessionApi } from '../src/server.mjs';
 
 async function startApi() {
   let calls = 0;
+  let lastCreateMatchRequest;
   const server = createSessionApi({
     adapter: {
-      async createMatch({ playerId }) {
+      async createMatch(request) {
         calls += 1;
+        lastCreateMatchRequest = request;
         return {
           address: '127.0.0.1',
           port: 7778,
-          playerSessionId: `psess_test_${playerId}`,
+          playerSessionId: `psess_test_${request.playerId}`,
           expiresAt: '2030-01-01T00:00:00.000Z',
         };
       },
@@ -22,7 +24,12 @@ async function startApi() {
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const { port } = server.address();
-  return { baseUrl: `http://127.0.0.1:${port}`, calls: () => calls, close: () => server.close() };
+  return {
+    baseUrl: `http://127.0.0.1:${port}`,
+    calls: () => calls,
+    lastCreateMatchRequest: () => lastCreateMatchRequest,
+    close: () => server.close(),
+  };
 }
 
 function requestHeaders(playerId, idempotencyKey) {
@@ -49,6 +56,13 @@ test('creates a ready match and reuses it for the same idempotency key', async (
   assert.equal(replay.status, 200);
   assert.equal(replayMatch.matchRequestId, firstMatch.matchRequestId);
   assert.equal(api.calls(), 1);
+  assert.deepEqual(api.lastCreateMatchRequest(), {
+    playerId: 'andrew',
+    maximumPlayerSessions: 4,
+    matchRequestId: firstMatch.matchRequestId,
+    party: ['andrew'],
+    xpAward: 125,
+  });
 });
 
 test('exposes an unauthenticated health endpoint without match data', async (t) => {

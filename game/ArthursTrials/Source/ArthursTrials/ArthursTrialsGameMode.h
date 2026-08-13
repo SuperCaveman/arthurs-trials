@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "TimerManager.h"
 #include "ArthursTrialsGameMode.generated.h"
 
 struct FProcessParameters;
@@ -35,12 +36,21 @@ protected:
 private:
 	void InitGameLift();
 	int32 GetGameLiftPort() const;
+	void ConfigureMatchResults(const TMap<FString, FString>& GameProperties);
+	void EmitAuthoritativeMatchCompletion();
 
 	TSharedPtr<FProcessParameters> GameLiftProcessParameters;
 	FGameLiftServerSDKModule* GameLiftSdkModule = nullptr;
 	bool bGameLiftPlayerSessionValidationRequired = false;
 	bool bGameLiftGameSessionActive = false;
+	bool bMatchResultsEmitted = false;
 	int32 RemainingForcedHealthCheckFailures = 0;
+	int32 MatchResultsCompletionDelaySeconds = 0;
+	int32 MatchResultsXpAward = 125;
+	FString ActiveMatchRequestId;
+	TArray<FString> ActiveMatchParticipants;
+	FString MatchResultsOutboxDirectory;
+	FTimerHandle MatchResultsCompletionTimer;
 	TMap<FString, FString> PendingPlayerSessionsByAddress;
 	TMap<TWeakObjectPtr<AController>, FString> AcceptedPlayerSessions;
 };
