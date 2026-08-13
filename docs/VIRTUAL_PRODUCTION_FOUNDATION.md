@@ -86,3 +86,20 @@ slice, plus `enable_virtual_production_assets=true` and an explicit existing
 host, NAT gateway, or always-on application service. Do not apply it without a
 separate time-boxed budget and a teardown decision; S3 storage/version history
 and DynamoDB backup retention can accrue cost while retained.
+
+## Recording-friendly recovery view
+
+After generating the local workflow and rollback JSON, create one static view
+that shows the recovery decision and the future security boundary without
+claiming deployment:
+
+```powershell
+node ./scripts/Generate-VirtualProductionRecoveryDashboard.mjs `
+  --workflow ./logs/virtual-production/Castle_Set_v12-<run>.json `
+  --rollback ./logs/virtual-production/Castle_Set_rollback.json `
+  --output ./logs/virtual-production/Castle_Set_recovery-and-access.html
+```
+
+This is the recommended next VP portfolio capture. It clearly shows `v12` to
+`v11` rollback, retained newer content, the local-stage boundary, and the
+default-off security controls in one screen.

@@ -1,0 +1,23 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
+}
+
+export function renderRecoveryDashboard({ workflow, rollback }) {
+  const current = escapeHtml(rollback.currentVersion || workflow.versionId);
+  const recovery = escapeHtml(rollback.recovery.finalStageVersion);
+  const actions = rollback.recovery.actions.map((action, index) => `<li><span>${index + 1}</span>${escapeHtml(action)}</li>`).join('');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VP Recovery &amp; Access Proof</title><style>:root{color-scheme:dark;--ink:#edf5ff;--muted:#a9c0d4;--line:#294c6c;--panel:#10263c;--blue:#61b8ff;--green:#6ee7af;--amber:#ffd166;background:#06121e}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#184b73,transparent 34rem),#06121e;color:var(--ink);font:16px/1.48 Inter,Segoe UI,sans-serif}.wrap{max-width:1120px;margin:auto;padding:48px 28px 68px}.eyebrow{color:var(--green);font-size:.78rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}h1{font-size:clamp(2.1rem,5.8vw,4.4rem);line-height:1.02;margin:.35rem 0 1rem}p{color:var(--muted)}.badges{display:flex;flex-wrap:wrap;gap:.55rem;margin:1.4rem 0 2rem}.badge{border:1px solid var(--line);border-radius:999px;padding:.38rem .7rem;color:var(--muted);font-size:.86rem}.good{border-color:#2f906c;color:var(--green)}.rollback{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center}.version,.card{background:linear-gradient(145deg,#133552,#0c1e31);border:1px solid var(--line);border-radius:18px;padding:22px}.version small,.card h2{color:var(--muted);font-weight:800;letter-spacing:.09em;text-transform:uppercase}.version strong{display:block;font-size:clamp(1.5rem,3vw,2.4rem);margin-top:.45rem}.arrow{color:var(--amber);font-size:2.3rem;text-align:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.card h2{font-size:.82rem;margin:0 0 .9rem}.card ul{list-style:none;padding:0;margin:0}.card li{border-top:1px solid var(--line);padding:.68rem 0;display:flex;gap:.7rem;color:var(--muted)}.card li:first-child{border-top:0;padding-top:0}.card li span{color:var(--blue);font-weight:800}.boundary{margin-top:14px;border-left:4px solid var(--green);padding:12px 16px;background:#0d2436;color:var(--muted)}@media(max-width:720px){.rollback,.grid{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}} </style></head><body><main class="wrap"><div class="eyebrow">Arthur's Trials · Unreal Engine Cloud Platform</div><h1>Stage recovery<br>&amp; least-privilege access</h1><p>A recoverable virtual-production workflow: the local Unreal stage can return to a previously approved environment without destroying the newer version.</p><div class="badges"><span class="badge good">Local proof verified</span><span class="badge good">Newer version retained</span><span class="badge">No AWS resources deployed</span><span class="badge">Default-off Terraform validated</span></div><section class="rollback"><article class="version"><small>Current stage version</small><strong>${current}</strong><p>Approved production state before recovery.</p></article><div class="arrow">→</div><article class="version"><small>Restored stage version</small><strong>${recovery}</strong><p>Prior approved version selected for safe recovery.</p></article></section><section class="grid"><article class="card"><h2>Atomic recovery steps</h2><ul>${actions}</ul></article><article class="card"><h2>Future AWS guardrails</h2><ul><li><span>01</span>Private, versioned S3 asset storage</li><li><span>02</span>Archive noncurrent versions after 90 days</li><li><span>03</span>On-demand, recoverable approval metadata</li><li><span>04</span>Stage role reads only approved assets</li></ul></article></section><p class="boundary">Evidence boundary: ${escapeHtml(rollback.scope)} The Unreal render/stage workstation remains local; cloud services support versioning, approval, and delivery—not real-time LED-wall rendering.</p></main></body></html>`;
+}
+
+export async function createRecoveryDashboard({ workflowPath, rollbackPath, outputPath }) {
+  const [workflow, rollback] = await Promise.all([
+    readFile(workflowPath, 'utf8').then(JSON.parse),
+    readFile(rollbackPath, 'utf8').then(JSON.parse),
+  ]);
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, renderRecoveryDashboard({ workflow, rollback }), 'utf8');
+  return { workflow, rollback };
+}
