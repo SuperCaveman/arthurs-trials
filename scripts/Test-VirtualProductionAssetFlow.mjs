@@ -9,6 +9,10 @@ const workflow = createAssetWorkflow(manifest, { approvedBy: 'stage-supervisor' 
 assert.equal(workflow.versionId, 'Castle_Set_v12');
 assert.equal(workflow.currentStatus, 'Deployed');
 assert.equal(workflow.asset.storagePrefix, 'productions/arthurs-trials-demo');
+assert.equal(workflow.validation.status, 'Passed');
+assert.equal(workflow.validation.expectedPackage, 'Castle_Set_v12.umap');
+assert.throws(() => createAssetWorkflow({ ...manifest, source: { ...manifest.source, package: 'Castle_Set_v11.umap' } }), /source\.package/);
+assert.throws(() => createAssetWorkflow({ ...manifest, checks: { ...manifest.checks, requiredFiles: ['../Castle_Set_v12.umap'] } }), /must include the Unreal map package/);
 assert.deepEqual(workflow.transitions.map((transition) => transition.status), ['Uploaded', 'Processing', 'Validated', 'Approved for Stage', 'Deployed']);
 assert.match(workflow.scope, /No S3 bucket/i);
 const root = await mkdtemp(join(tmpdir(), 'arthurs-trials-vp-'));

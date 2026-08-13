@@ -35,6 +35,12 @@ This is intentionally a local contract first. The separately optional Terraform
 slice below remains default-off; it has the same clear cost, security, and
 teardown guardrails as the gaming workload.
 
+The local validation step is a structural Unreal package preflight: the map
+must follow the declared `<asset>_v<version>.umap` convention, be listed among
+required artifacts, and use safe artifact filenames. Invalid/mismatched
+manifests fail before approval. This is not an Unreal cook or render claim; a
+future approved build job would perform engine-level package validation.
+
 ## Recording-friendly workflow view
 
 Turn any generated workflow JSON into a safe HTML dashboard:

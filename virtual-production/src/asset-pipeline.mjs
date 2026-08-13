@@ -10,6 +10,10 @@ function validateManifest(manifest) {
   if (!Number.isInteger(manifest?.version) || manifest.version < 1 || manifest.version > 9999) throw new Error('version must be an integer from 1 through 9999.');
   if (!Array.isArray(manifest?.checks?.requiredFiles) || manifest.checks.requiredFiles.length < 1) throw new Error('checks.requiredFiles must list at least one required file.');
   if (!Number.isInteger(manifest?.checks?.estimatedBytes) || manifest.checks.estimatedBytes < 1) throw new Error('checks.estimatedBytes must be a positive integer.');
+  const expectedPackage = `${manifest.assetName}_v${manifest.version}.umap`;
+  if (manifest?.source?.package !== expectedPackage) throw new Error(`source.package must be ${expectedPackage}.`);
+  if (!manifest.checks.requiredFiles.includes(expectedPackage)) throw new Error('checks.requiredFiles must include the Unreal map package.');
+  if (manifest.checks.requiredFiles.some((file) => typeof file !== 'string' || file.includes('..') || /[\\/]/.test(file))) throw new Error('checks.requiredFiles must be simple artifact filenames without path traversal.');
 }
 
 export function assetVersionId(manifest) {
@@ -26,6 +30,7 @@ export function createAssetWorkflow(manifest, { approvedBy = 'portfolio-operator
   const versionId = assetVersionId(manifest);
   const manifestDigest = createHash('sha256').update(JSON.stringify(manifest)).digest('hex');
   const timestamp = new Date().toISOString();
+  const expectedPackage = `${manifest.assetName}_v${manifest.version}.umap`;
   const transitions = statuses.map((status, index) => ({
     status,
     at: timestamp,
@@ -38,6 +43,12 @@ export function createAssetWorkflow(manifest, { approvedBy = 'portfolio-operator
     production: manifest.production,
     asset: { package: manifest.source.package, manifestSha256: manifestDigest, estimatedBytes: manifest.checks.estimatedBytes, storagePrefix: productionAssetPrefix(manifest) },
     source: manifest.source,
+    validation: {
+      type: 'local-structural-preflight',
+      status: 'Passed',
+      checks: ['versioned Unreal map package matches asset/version', 'required map package declared', 'artifact filenames reject path traversal'],
+      expectedPackage,
+    },
     stageTarget: manifest.stageTarget,
     transitions,
     currentStatus: statuses.at(-1),
