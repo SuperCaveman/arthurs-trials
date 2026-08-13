@@ -2,6 +2,13 @@
 
 Status: **Workflow template validated; no cloud release performed**
 
+**Executed evidence:** The no-deploy workflow was run successfully on
+2026-08-13 against the public repository's then-current `main` revision. It
+tested both packages, built both candidate images, and uploaded a 14-day
+manifest containing two artifact records with `deployment.performed: false`.
+No AWS credential, registry login, image push, Terraform apply, or deployment
+occurred.
+
 The manual **Build release candidate (no deploy)** GitHub Actions workflow
 builds the session-API and results-worker images, tests both packages, and
 uploads a JSON evidence manifest. The manifest records the source revision and
