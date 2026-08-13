@@ -39,6 +39,10 @@ credential and a rejected missing credential; see the [redacted local proof](doc
 The planned control-plane trust boundary and session handoff are specified in
 the [session API contract](docs/SESSION_API_CONTRACT.md).
 
+The planned two-to-four player matchmaking policy is a versioned, locally
+validated [FlexMatch rule-set template](docs/FLEXMATCH_DESIGN.md); it is not a
+deployed matchmaker.
+
 The local, idempotent proof for the future asynchronous reward path is in the
 [match-results contract](docs/MATCH_RESULTS_CONTRACT.md).
 

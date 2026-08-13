@@ -1,0 +1,41 @@
+{
+  "name": "arthurs-trials-co-op-defense-v1",
+  "ruleLanguageVersion": "1.0",
+  "algorithm": {
+    "strategy": "exhaustiveSearch",
+    "batchingPreference": "random",
+    "expansionAgeSelection": "oldest",
+    "backfillPriority": "high"
+  },
+  "teams": [
+    {
+      "name": "Coop",
+      "minPlayers": 2,
+      "maxPlayers": 4
+    }
+  ],
+  "rules": [
+    {
+      "name": "regional-latency",
+      "description": "Start with a latency guardrail for every player in the ticket.",
+      "type": "latency",
+      "maxLatency": 80,
+      "partyAggregation": "max"
+    }
+  ],
+  "expansions": [
+    {
+      "target": "rules[regional-latency].maxLatency",
+      "steps": [
+        {
+          "waitTimeSeconds": 20,
+          "value": 120
+        },
+        {
+          "waitTimeSeconds": 45,
+          "value": 160
+        }
+      ]
+    }
+  ]
+}
