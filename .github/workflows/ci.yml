@@ -53,6 +53,9 @@ jobs:
       - name: Verify virtual-production workflow dashboard
         run: node scripts/Test-VirtualProductionDashboard.mjs
 
+      - name: Verify virtual-production rollback workflow
+        run: node scripts/Test-VirtualProductionRollback.mjs
+
       - name: Validate GameLift container template
         run: node scripts/Test-GameLiftContainerTemplate.mjs
 

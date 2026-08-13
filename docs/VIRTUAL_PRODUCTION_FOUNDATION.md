@@ -48,3 +48,20 @@ node ./scripts/Generate-VirtualProductionDashboard.mjs `
 It is deliberately labelled as a local simulation. The screen is useful for a
 future VP portfolio clip because it makes the version, approval gate, local
 stage target, and AWS responsibility boundaries visible in one place.
+
+## Recovery and rollback proof
+
+`Castle_Set_v11` is retained as an earlier approved version. The local recovery
+workflow switches the simulated stage manifest from `v12` back to `v11` while
+retaining `v12` for audit and future recovery:
+
+```powershell
+node ./scripts/Run-VirtualProductionRollback.mjs `
+  --current ./virtual-production/examples/Castle_Set_v12.asset-manifest.json `
+  --recovery ./virtual-production/examples/Castle_Set_v11.asset-manifest.json `
+  --output ./logs/virtual-production/Castle_Set_rollback.json
+```
+
+In the production architecture, S3 version history and an authenticated
+approval record preserve the same rollback boundary; lifecycle policy moves
+older content to lower-cost archive storage without erasing recovery history.
