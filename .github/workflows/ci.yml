@@ -41,6 +41,9 @@ jobs:
       - name: Validate architecture visual contract
         run: node scripts/Test-ArchitectureDiagram.mjs
 
+      - name: Validate portfolio documentation links
+        run: node scripts/Test-DocumentationLinks.mjs
+
       - name: Exercise the local API benchmark
         run: node scripts/Run-SessionApiLoadTest.mjs
 
