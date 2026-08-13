@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createPublicKey, randomUUID, verify as verifySignature } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { createFileMatchStore, createInMemoryMatchStore } from './match-store.mjs';
 
 const execFileAsync = promisify(execFile);
 const MAX_BODY_BYTES = 16 * 1024;
@@ -301,11 +302,9 @@ export function createAnywhereGameLiftAdapter(environment = process.env) {
 export function createSessionApi({
   adapter = createFakeGameLiftAdapter(),
   authenticate = createLocalAuthenticator(),
+  store = createInMemoryMatchStore(),
   logger = console,
 } = {}) {
-  const matches = new Map();
-  const idempotency = new Map();
-
   return createServer(async (request, response) => {
     try {
       const url = new URL(request.url, 'http://localhost');
@@ -324,9 +323,9 @@ export function createSessionApi({
           return sendJson(response, 400, { error: 'A UUID-shaped Idempotency-Key is required.' });
         }
 
-        const existingId = idempotency.get(`${principal.id}:${idempotencyKey}`);
-        if (existingId) {
-          return sendJson(response, 200, publicMatch(matches.get(existingId)));
+        const existingMatch = await store.getByIdempotency(principal.id, idempotencyKey);
+        if (existingMatch) {
+          return sendJson(response, 200, publicMatch(existingMatch));
         }
 
         const body = await readJson(request);
@@ -346,22 +345,21 @@ export function createSessionApi({
           expiresAt: connection.expiresAt,
           ownerId: principal.id,
         };
-        matches.set(match.matchRequestId, match);
-        idempotency.set(`${principal.id}:${idempotencyKey}`, match.matchRequestId);
+        await store.save(match, idempotencyKey);
         logger.info?.({ event: 'match_ready', matchRequestId: match.matchRequestId, authMode: principal.authMode });
         return sendJson(response, 201, publicMatch(match));
       }
 
       const matchId = /^\/v1\/matches\/(mrq_[A-Za-z0-9-]+)$/.exec(url.pathname)?.[1];
       if (matchId && request.method === 'GET') {
-        const match = matches.get(matchId);
+        const match = await store.getById(matchId);
         if (!match) return sendJson(response, 404, { error: 'Match request was not found.' });
         if (match.ownerId !== principal.id) return sendJson(response, 403, { error: 'Match request belongs to another player.' });
         return sendJson(response, 200, publicMatch(match));
       }
 
       if (matchId && request.method === 'DELETE') {
-        const match = matches.get(matchId);
+        const match = await store.getById(matchId);
         if (!match) return sendJson(response, 404, { error: 'Match request was not found.' });
         if (match.ownerId !== principal.id) return sendJson(response, 403, { error: 'Match request belongs to another player.' });
         return sendJson(response, 409, { error: 'READY local matches cannot be cancelled after a player session is issued.' });
@@ -381,10 +379,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const host = process.env.SESSION_API_HOST ?? '127.0.0.1';
   const adapterName = process.env.GAME_LIFT_ADAPTER ?? 'fake';
   const authMode = process.env.SESSION_API_AUTH_MODE ?? 'local';
+  const storeName = process.env.SESSION_API_STORE ?? 'memory';
   const adapter = adapterName === 'anywhere'
     ? createAnywhereGameLiftAdapter()
     : createFakeGameLiftAdapter();
   if (!['fake', 'anywhere'].includes(adapterName)) throw new Error('GAME_LIFT_ADAPTER must be fake or anywhere.');
+  if (!['memory', 'file'].includes(storeName)) throw new Error('SESSION_API_STORE must be memory or file.');
   const authenticate = authMode === 'cognito'
     ? createCognitoJwtAuthenticator({
       issuer: process.env.COGNITO_ISSUER,
@@ -393,7 +393,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     : createLocalAuthenticator();
   if (!['local', 'cognito'].includes(authMode)) throw new Error('SESSION_API_AUTH_MODE must be local or cognito.');
 
-  createSessionApi({ adapter, authenticate }).listen(port, host, () => {
-    console.info(JSON.stringify({ event: 'session_api_started', adapter: adapterName, authMode, host, port }));
+  const store = storeName === 'file'
+    ? createFileMatchStore({ path: process.env.SESSION_API_STORE_PATH })
+    : createInMemoryMatchStore();
+
+  createSessionApi({ adapter, authenticate, store }).listen(port, host, () => {
+    console.info(JSON.stringify({ event: 'session_api_started', adapter: adapterName, authMode, store: storeName, host, port }));
   });
 }

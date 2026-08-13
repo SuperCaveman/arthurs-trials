@@ -2,9 +2,13 @@ import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import test from 'node:test';
 import { once } from 'node:events';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createFileMatchStore } from '../src/match-store.mjs';
 import { createCognitoJwtAuthenticator, createSessionApi } from '../src/server.mjs';
 
-async function startApi({ authenticate } = {}) {
+async function startApi({ authenticate, store } = {}) {
   let calls = 0;
   let lastCreateMatchRequest;
   const server = createSessionApi({
@@ -21,6 +25,7 @@ async function startApi({ authenticate } = {}) {
       },
     },
     authenticate,
+    store,
     logger: { info() {}, error() {} },
   });
   server.listen(0, '127.0.0.1');
@@ -189,4 +194,31 @@ test('rejects a Cognito token with the wrong client audience before placement', 
 
   assert.equal(response.status, 401);
   assert.equal(api.calls(), 0);
+});
+
+test('persists an idempotent match across a local API restart', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'arthurs-trials-session-store-'));
+  const storePath = join(directory, 'matches.json');
+  const idempotencyKey = '12f0f67a-7f8d-44e1-a055-5fa58efb4bf6';
+  const headers = requestHeaders('andrew', idempotencyKey);
+  const body = JSON.stringify({ mode: 'co-op-defense', region: 'us-east-1', party: ['andrew'] });
+
+  const firstApi = await startApi({ store: createFileMatchStore({ path: storePath }) });
+  const first = await fetch(`${firstApi.baseUrl}/v1/matches`, { method: 'POST', headers, body });
+  const firstMatch = await first.json();
+  await firstApi.close();
+
+  const secondApi = await startApi({ store: createFileMatchStore({ path: storePath }) });
+  t.after(secondApi.close);
+  const replay = await fetch(`${secondApi.baseUrl}/v1/matches`, { method: 'POST', headers, body });
+  const replayMatch = await replay.json();
+  const read = await fetch(`${secondApi.baseUrl}/v1/matches/${firstMatch.matchRequestId}`, {
+    headers: { authorization: 'Bearer local-dev-andrew' },
+  });
+
+  assert.equal(first.status, 201);
+  assert.equal(replay.status, 200);
+  assert.equal(replayMatch.matchRequestId, firstMatch.matchRequestId);
+  assert.equal((await read.json()).matchRequestId, firstMatch.matchRequestId);
+  assert.equal(secondApi.calls(), 0);
 });

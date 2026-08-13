@@ -125,9 +125,11 @@ operator tools for starting and stopping the server process:
 
 The Anywhere adapter has been exercised end-to-end against the local dedicated
 server; see the [redacted local proof](evidence/SESSION_API_ANYWHERE_PROOF.md).
-The local bearer token and in-memory store are development-only. A
-Cognito-compatible RS256/JWKS verifier is now locally tested with generated
-keys: it checks access-token issuer, client ID, expiry, token use, signing key,
-and signature before creating a match. No live user pool or sign-in has been
-tested, so Cognito integration, RDS persistence, and an ECS task role remain
-managed-demo work.
+The local bearer token is development-only. A Cognito-compatible RS256/JWKS
+verifier is now locally tested with generated keys: it checks access-token
+issuer, client ID, expiry, token use, signing key, and signature before
+creating a match. A separate optional local file store uses atomic replacement
+to retain match ownership/idempotency across one API restart. It is explicitly
+single-process development persistence, not a database. No live user pool or
+sign-in has been tested, so Cognito integration, transactional RDS persistence,
+and an ECS task role remain managed-demo work.

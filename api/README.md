@@ -17,6 +17,8 @@ locally generated RSA key and does not require an AWS user pool.
   credential.
 - an optional API path verifies a signed Cognito access token's issuer, client
   ID, expiry, token type, signature, and JWKS key ID before placement.
+- an opt-in local file store preserves match ownership and idempotency across
+  an API restart using an atomic write/rename.
 
 ## Run without AWS
 
@@ -58,6 +60,22 @@ npm start
 Do not put a JWT, player-session ID, or user email in a screenshot or log. The
 repository test generates an ephemeral RSA key and proves valid and wrong-client
 tokens locally; a live Cognito sign-in remains an opt-in managed-demo task.
+
+## Durable local match state
+
+`memory` is the safe default for ordinary tests. To prove restart-safe local
+idempotency without a database service, set the optional file-store path:
+
+```powershell
+$env:SESSION_API_STORE = 'file'
+$env:SESSION_API_STORE_PATH = '..\logs\session-api-store.json'
+npm start
+```
+
+The file adapter is intentionally single-process and local only. It atomically
+replaces its state file, but does not provide database transactions, concurrent
+writer protection, backups, encryption at rest, or cross-instance sharing.
+RDS PostgreSQL is still the planned managed implementation.
 
 ## Connect to the local GameLift Anywhere fleet
 
