@@ -20,10 +20,14 @@ if ([string]::IsNullOrWhiteSpace($GameSessionId)) {
     $GameSessionId = $sessions[0].GameSessionId
 }
 
-aws gamelift terminate-game-session `
+$termination = aws gamelift terminate-game-session `
     --region $config.Region `
     --game-session-id $GameSessionId `
     --termination-mode TRIGGER_ON_PROCESS_TERMINATE `
     --output json
+
+if ($LASTEXITCODE -ne 0) {
+    throw 'GameLift could not request session termination.'
+}
 
 Write-Host 'Graceful termination requested. The GameLift callback will stop the server process.'

@@ -6,12 +6,14 @@ const apiPath = new URL('../api/src/server.mjs', import.meta.url);
 const outboxPath = new URL('../worker/src/outbox.mjs', import.meta.url);
 const resultsStorePath = new URL('../worker/src/results-store.mjs', import.meta.url);
 const sessionHelperPath = new URL('./New-GameLiftAnywhereSession.ps1', import.meta.url);
+const stopSessionHelperPath = new URL('./Stop-GameLiftAnywhereSession.ps1', import.meta.url);
 const launcherPath = new URL('./Start-GameLiftAnywhereLocal.ps1', import.meta.url);
 const gameMode = await readFile(gameModePath, 'utf8');
 const api = await readFile(apiPath, 'utf8');
 const outbox = await readFile(outboxPath, 'utf8');
 const resultsStore = await readFile(resultsStorePath, 'utf8');
 const sessionHelper = await readFile(sessionHelperPath, 'utf8');
+const stopSessionHelper = await readFile(stopSessionHelperPath, 'utf8');
 const launcher = await readFile(launcherPath, 'utf8');
 
 assert.match(api, /Key=matchId,Value=\$\{matchRequestId\}/);
@@ -32,6 +34,8 @@ assert.match(resultsStore, /await rename\(temporaryPath, path\)/);
 assert.match(sessionHelper, /Key=matchId,Value=\$MatchId/);
 assert.match(sessionHelper, /Key=participants,Value=\$\(\$Participants -join ','\)/);
 assert.match(sessionHelper, /if \(\$LASTEXITCODE -ne 0\)/);
+assert.match(stopSessionHelper, /\$termination = aws gamelift terminate-game-session/);
+assert.match(stopSessionHelper, /if \(\$LASTEXITCODE -ne 0\)/);
 assert.match(launcher, /MatchResultsCompleteAfterSeconds/);
 assert.match(launcher, /MatchResultsOutboxDir=`"\$MatchResultsOutboxDir`"/);
 
