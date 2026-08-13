@@ -44,6 +44,9 @@ jobs:
       - name: Exercise the local API benchmark
         run: node scripts/Run-SessionApiLoadTest.mjs
 
+      - name: Verify bounded local placement simulation
+        run: node scripts/Test-PlacementLoadSimulation.mjs
+
       - name: Validate GameLift container template
         run: node scripts/Test-GameLiftContainerTemplate.mjs
 
