@@ -1,19 +1,27 @@
 [CmdletBinding()]
 param(
     [string]$LogPath = 'D:\AWS Projects\ArthursTrials\build\WindowsServer-GameLift\ArthursTrials\Saved\Logs\ArthursTrials.log',
+    [string[]]$AdditionalLogPaths = @(),
     [string]$OutputDirectory = 'D:\AWS Projects\ArthursTrials\logs\evidence'
 )
 
 $ErrorActionPreference = 'Stop'
 
-if (-not (Test-Path -LiteralPath $LogPath)) {
-    throw "Server log not found: $LogPath"
+$allLogPaths = @($LogPath) + @($AdditionalLogPaths)
+foreach ($path in $allLogPaths) {
+    if (-not (Test-Path -LiteralPath $path)) {
+        throw "Server log not found: $path"
+    }
 }
 
 $patterns = @(
     'Initializing GameLift for an Anywhere compute',
     'Init SDK success',
     'GameLift ProcessReady succeeded',
+    'Fault-injection mode enabled',
+    'Fault injection: deliberately failed a GameLift health check',
+    'Received Health Response: false',
+    'Received Health Response: true',
     'OnStartGameSession',
     'ActivateGameSession',
     'GameLift accepted a player session',
@@ -27,7 +35,9 @@ $patterns = @(
 )
 
 $combinedPattern = $patterns -join '|'
-$excerpt = Get-Content -LiteralPath $LogPath | Where-Object { $_ -match $combinedPattern }
+$excerpt = foreach ($path in $allLogPaths) {
+    Get-Content -LiteralPath $path | Where-Object { $_ -match $combinedPattern }
+}
 
 if (@($excerpt).Count -eq 0) {
     throw 'No lifecycle evidence lines were found in the server log.'
@@ -48,10 +58,15 @@ $outputPath = Join-Path $OutputDirectory "gamelift-anywhere-evidence-$timestamp.
 
 @(
     '# Arthur''s Trials - sanitized GameLift Anywhere evidence',
-    "# Source log: $([IO.Path]::GetFileName($LogPath))",
+    "# Source logs: $((@($allLogPaths | ForEach-Object { [IO.Path]::GetFileName($_) }) -join ', '))",
     "# Exported: $((Get-Date).ToUniversalTime().ToString('o'))",
     '',
     $redacted
 ) | Set-Content -LiteralPath $outputPath -Encoding utf8
 
 Write-Host "Wrote sanitized evidence excerpt: $outputPath"
+
+# This script can run immediately after an AWS CLI call that returned a nonzero
+# status during an expected state transition. The export itself succeeded, so
+# do not leak that stale native-process exit code to callers.
+$global:LASTEXITCODE = 0

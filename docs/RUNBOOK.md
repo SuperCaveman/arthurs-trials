@@ -37,10 +37,11 @@ For a controlled failure/recovery capture, start the server this way instead:
 ```
 
 This explicit test-only switch makes the next health-check callback return
-unhealthy once, then returns to normal health on subsequent callbacks. Wait for
-the server log to show `Fault injection: deliberately failed a GameLift health
-check`, then continue with the same game-session and player-session flow below.
-Do not use this switch during the normal playable capture.
+unhealthy once. GameLift treats that as an unhealthy process and issues
+`TerminateProcess`, so do not expect that same process to report healthy later.
+For the recovery half of the test, start a fresh replacement server without the
+switch and verify its `ProcessReady` and `Received Health Response: true` log
+lines. Do not use this switch during the normal playable capture.
 
 ## 2. Create a game session
 

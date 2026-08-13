@@ -58,7 +58,7 @@ Use the Unreal GameLift Servers plugin and Server SDK v5. Implement the full lif
 4. Validate every player-session ID before admitting a client.
 5. On disconnect, call `RemovePlayerSession` so the slot is accurately released.
 6. On match end or `OnProcessTerminate`, stop admissions, persist the final reward once, notify players, call `ProcessEnding`, then `Destroy`.
-7. Make the health check fail for a real, explainable reason (for example, the match-state executor stops responding), and verify recovery.
+7. Make the health check fail for a real, explainable reason (for example, the match-state executor stops responding), verify that GameLift terminates the unhealthy process, then verify a replacement process returns healthy.
 
 **Evidence:** a short capture of a placement, connections, a graceful termination, and a controlled unhealthy-server recovery; server logs with placement and game-session IDs redacted as appropriate.
 
