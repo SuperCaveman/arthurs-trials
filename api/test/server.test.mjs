@@ -136,9 +136,10 @@ test('queue adapter creates one latency-aware placement and returns only the cal
   const calls = [];
   let describeCount = 0;
   const adapter = createQueueGameLiftAdapter({ AWS_REGION: 'us-east-1', GAME_LIFT_QUEUE_NAME: 'arthurs-trials-demo-queue' }, {
-    async awsJsonFn(args) {
-      calls.push(args);
-      if (args[1] === 'start-game-session-placement') return { GameSessionPlacement: { Status: 'PENDING' } };
+    client: {
+      async send(command) {
+        calls.push(command);
+        if (command.constructor.name === 'StartGameSessionPlacementCommand') return { GameSessionPlacement: { Status: 'PENDING' } };
       describeCount += 1;
       return {
         GameSessionPlacement: describeCount === 1
@@ -153,6 +154,7 @@ test('queue adapter creates one latency-aware placement and returns only the cal
             ],
           },
       };
+      },
     },
     sleepFn: async () => {},
   });
@@ -172,10 +174,10 @@ test('queue adapter creates one latency-aware placement and returns only the cal
   assert.deepEqual({ address: connection.address, port: connection.port, playerSessionId: connection.playerSessionId }, {
     address: '203.0.113.10', port: 7777, playerSessionId: 'psess_andrew',
   });
-  assert.equal(calls[0][1], 'start-game-session-placement');
-  assert.ok(calls[0].includes('--desired-player-sessions'));
-  assert.ok(calls[0].includes('PlayerId=andrew,RegionIdentifier=us-east-1,LatencyInMilliseconds=31'));
-  assert.equal(calls.filter((args) => args[1] === 'describe-game-session-placement').length, 2);
+  assert.equal(calls[0].constructor.name, 'StartGameSessionPlacementCommand');
+  assert.deepEqual(calls[0].input.DesiredPlayerSessions, [{ PlayerId: 'andrew' }, { PlayerId: 'arthur' }]);
+  assert.deepEqual(calls[0].input.PlayerLatencies[0], { PlayerId: 'andrew', RegionIdentifier: 'us-east-1', LatencyInMilliseconds: 31 });
+  assert.equal(calls.filter((command) => command.constructor.name === 'DescribeGameSessionPlacementCommand').length, 2);
 });
 
 test('exposes an unauthenticated health endpoint without match data', async (t) => {

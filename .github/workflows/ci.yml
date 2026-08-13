@@ -28,7 +28,9 @@ jobs:
 
       - name: Test local session API
         working-directory: api
-        run: npm test
+        run: |
+          npm ci
+          npm test
 
       - name: Validate player-safe capacity exhaustion contract
         run: node scripts/Test-SessionCapacityContract.mjs
@@ -89,6 +91,9 @@ jobs:
 
       - name: Validate release-candidate workflow boundary
         run: node scripts/Test-ReleaseCandidateWorkflow.mjs
+
+      - name: Validate session API container and SDK contract
+        run: node scripts/Test-SessionApiContainerContract.mjs
 
       - name: Build session API container
         working-directory: api

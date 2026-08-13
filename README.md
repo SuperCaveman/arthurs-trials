@@ -64,7 +64,7 @@ The local, idempotent proof for the future asynchronous reward path is in the
 The deliberately narrow, repeatable local API performance check and its limits
 are described in the [benchmark guide](docs/LOCAL_BENCHMARK.md).
 
-A local, dependency-free implementation of that boundary lives in
+A small local implementation of that boundary lives in
 [api/](api/README.md). It is tested with a fake adapter and can use the local
 GameLift Anywhere fleet when explicitly configured; it is not deployed.
 The full local API-to-GameLift-to-Unreal path is also

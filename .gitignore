@@ -30,6 +30,7 @@ infra/*.tfstate
 infra/*.tfstate.*
 infra/*.tfplan
 infra/*-plan.json
+infra/provider-schema.json
 
 # Operating system files
 .DS_Store

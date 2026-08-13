@@ -1,6 +1,6 @@
 # Local Session API
 
-This is a dependency-free, local implementation of the session boundary in
+This is a small, local implementation of the session boundary in
 [`docs/SESSION_API_CONTRACT.md`](../docs/SESSION_API_CONTRACT.md). It is not an
 internet-facing production service. Its default local mode accepts only local
 development tokens; an opt-in Cognito-compatible JWT verifier is tested with a
@@ -91,9 +91,10 @@ $env:GAME_LIFT_LOCATION = 'custom-arthurs-trials-local'
 npm start
 ```
 
-The Anywhere adapter invokes the AWS CLI from the API process; the Unreal
-client never receives AWS credentials. This is the local stand-in for the
-future ECS task role and AWS SDK implementation.
+The Anywhere adapter uses the official GameLift AWS SDK from the API process;
+the Unreal client never receives AWS credentials. In an ECS task, the SDK uses
+the task role rather than a bundled CLI or stored key. Local Anywhere testing
+continues to use the workstation's existing AWS credential chain.
 
 ## Managed GameLift queue adapter (template only)
 

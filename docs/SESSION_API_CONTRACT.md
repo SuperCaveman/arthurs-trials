@@ -120,8 +120,8 @@ records a cancellation reason for support and metrics.
 ## Local-development mapping
 
 The local API now exposes the client-facing boundary. It defaults to a fake
-adapter for unit and HTTP-contract tests, and its `anywhere` adapter invokes
-the AWS CLI only from the API process. A separately tested `queue` adapter
+adapter for unit and HTTP-contract tests, and its `anywhere` adapter uses the
+official GameLift AWS SDK only from the API process. A separately tested `queue` adapter
 uses `StartGameSessionPlacement`, waits for a fulfilled placement, and returns
 the caller's already-created GameLift player-session reservation. The existing
 scripts remain the local operator tools for starting and stopping the server

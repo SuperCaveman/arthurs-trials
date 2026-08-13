@@ -30,7 +30,9 @@ jobs:
 
       - name: Test session API
         working-directory: api
-        run: npm test
+        run: |
+          npm ci
+          npm test
 
       - name: Test results worker
         working-directory: worker

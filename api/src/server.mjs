@@ -1,11 +1,16 @@
 import { createServer } from 'node:http';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { createPublicKey, randomUUID, verify as verifySignature } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import {
+  CreateGameSessionCommand,
+  CreatePlayerSessionCommand,
+  DescribeGameSessionPlacementCommand,
+  DescribeGameSessionsCommand,
+  GameLiftClient,
+  StartGameSessionPlacementCommand,
+} from '@aws-sdk/client-gamelift';
 import { createFileMatchStore, createInMemoryMatchStore } from './match-store.mjs';
 
-const execFileAsync = promisify(execFile);
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_PARTY_SIZE = 4;
 const LOCAL_TOKEN_PATTERN = /^Bearer local-dev-([A-Za-z0-9._-]{3,64})$/;
@@ -258,15 +263,13 @@ function requiredEnvironment(name, environment) {
   return value;
 }
 
-async function awsJson(args) {
+async function sendGameLift(client, command) {
   try {
-    const { stdout } = await execFileAsync('aws', args, { windowsHide: true });
-    return JSON.parse(stdout);
+    return await client.send(command);
   } catch (error) {
-    // AWS CLI uses FleetCapacityExceededException when no Anywhere process
-    // can reserve a game session. Preserve that meaning for the API response
-    // without returning raw AWS error details to a player.
-    if (/FleetCapacityExceededException/i.test(`${error.stderr ?? ''}\n${error.message ?? ''}`)) {
+    // Preserve GameLift's exhausted-capacity meaning without returning SDK
+    // error details to a player.
+    if (/FleetCapacityExceededException/i.test(`${error.name ?? ''}\n${error.message ?? ''}`)) {
       throw capacityUnavailable();
     }
     throw error;
@@ -275,15 +278,12 @@ async function awsJson(args) {
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-async function waitForActiveGameSession({ gameSessionId, region }) {
+async function waitForActiveGameSession({ gameSessionId, client }) {
   const deadline = Date.now() + GAME_SESSION_READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    const gameSession = (await awsJson([
-      'gamelift', 'describe-game-sessions',
-      '--region', region,
-      '--game-session-id', gameSessionId,
-      '--output', 'json',
-    ])).GameSessions?.[0];
+    const gameSession = (await sendGameLift(client, new DescribeGameSessionsCommand({
+      GameSessionId: gameSessionId,
+    }))).GameSessions?.[0];
     if (gameSession?.Status === 'ACTIVE') return gameSession;
     if (['TERMINATED', 'ERROR'].includes(gameSession?.Status)) {
       throw new Error(`GameLift session entered ${gameSession.Status} before placement completed.`);
@@ -293,38 +293,34 @@ async function waitForActiveGameSession({ gameSessionId, region }) {
   throw new Error('Timed out waiting for GameLift to activate the game session.');
 }
 
-export function createAnywhereGameLiftAdapter(environment = process.env) {
+export function createAnywhereGameLiftAdapter(environment = process.env, { client } = {}) {
   const region = requiredEnvironment('AWS_REGION', environment);
   const fleetId = requiredEnvironment('GAME_LIFT_FLEET_ID', environment);
   const location = requiredEnvironment('GAME_LIFT_LOCATION', environment);
+  const gameLift = client ?? new GameLiftClient({ region });
 
   return {
     async createMatch({ playerId, maximumPlayerSessions, matchRequestId, party, xpAward }) {
-      const gameSession = (await awsJson([
-        'gamelift', 'create-game-session',
-        '--region', region,
-        '--fleet-id', fleetId,
-        '--location', location,
-        '--name', `api-local-${randomUUID()}`,
-        '--maximum-player-session-count', String(maximumPlayerSessions),
-        '--game-properties',
-        `Key=matchId,Value=${matchRequestId}`,
-        `Key=participants,Value=${party.join(',')}`,
-        `Key=xpAward,Value=${xpAward}`,
-        '--output', 'json',
-      ])).GameSession;
+      const gameSession = (await sendGameLift(gameLift, new CreateGameSessionCommand({
+        FleetId: fleetId,
+        Location: location,
+        Name: `api-local-${randomUUID()}`,
+        MaximumPlayerSessionCount: maximumPlayerSessions,
+        GameProperties: [
+          { Key: 'matchId', Value: matchRequestId },
+          { Key: 'participants', Value: party.join(',') },
+          { Key: 'xpAward', Value: String(xpAward) },
+        ],
+      }))).GameSession;
 
       const activeGameSession = await waitForActiveGameSession({
         gameSessionId: gameSession.GameSessionId,
-        region,
+        client: gameLift,
       });
-      const playerSession = (await awsJson([
-        'gamelift', 'create-player-session',
-        '--region', region,
-        '--game-session-id', gameSession.GameSessionId,
-        '--player-id', playerId,
-        '--output', 'json',
-      ])).PlayerSession;
+      const playerSession = (await sendGameLift(gameLift, new CreatePlayerSessionCommand({
+        GameSessionId: gameSession.GameSessionId,
+        PlayerId: playerId,
+      }))).PlayerSession;
 
       return {
         address: playerSession.IpAddress ?? activeGameSession.IpAddress,
@@ -336,15 +332,12 @@ export function createAnywhereGameLiftAdapter(environment = process.env) {
   };
 }
 
-async function waitForFulfilledPlacement({ placementId, region, awsJsonFn, sleepFn, timeoutMilliseconds }) {
+async function waitForFulfilledPlacement({ placementId, client, sleepFn, timeoutMilliseconds }) {
   const deadline = Date.now() + timeoutMilliseconds;
   while (Date.now() < deadline) {
-    const placement = (await awsJsonFn([
-      'gamelift', 'describe-game-session-placement',
-      '--region', region,
-      '--placement-id', placementId,
-      '--output', 'json',
-    ])).GameSessionPlacement;
+    const placement = (await sendGameLift(client, new DescribeGameSessionPlacementCommand({
+      PlacementId: placementId,
+    }))).GameSessionPlacement;
     if (placement?.Status === 'FULFILLED') return placement;
     if (['FAILED', 'TIMED_OUT', 'CANCELLED'].includes(placement?.Status)) throw capacityUnavailable();
     await sleepFn(1_000);
@@ -356,12 +349,13 @@ async function waitForFulfilledPlacement({ placementId, region, awsJsonFn, sleep
 // direct Anywhere proof: GameLift creates all party reservations during a
 // queue placement and the API returns only the caller's reservation.
 export function createQueueGameLiftAdapter(environment = process.env, {
-  awsJsonFn = awsJson,
+  client,
   sleepFn = sleep,
   timeoutMilliseconds = GAME_SESSION_PLACEMENT_TIMEOUT_MS,
 } = {}) {
   const region = requiredEnvironment('AWS_REGION', environment);
   const queueName = requiredEnvironment('GAME_LIFT_QUEUE_NAME', environment);
+  const gameLift = client ?? new GameLiftClient({ region });
 
   return {
     async createMatch({ playerId, maximumPlayerSessions, matchRequestId, party, xpAward, playerLatencies }) {
@@ -369,28 +363,23 @@ export function createQueueGameLiftAdapter(environment = process.env, {
         throw new Error('Measured latency is required for every party player when GAME_LIFT_ADAPTER=queue.');
       }
       const placementId = randomUUID();
-      await awsJsonFn([
-        'gamelift', 'start-game-session-placement',
-        '--region', region,
-        '--placement-id', placementId,
-        '--game-session-queue-name', queueName,
-        '--game-session-name', `match-${placementId}`,
-        '--maximum-player-session-count', String(maximumPlayerSessions),
-        '--desired-player-sessions', ...party.map((id) => `PlayerId=${id}`),
-        '--player-latencies', ...playerLatencies.map((latency) => (
-          `PlayerId=${latency.PlayerId},RegionIdentifier=${latency.RegionIdentifier},LatencyInMilliseconds=${latency.LatencyInMilliseconds}`
-        )),
-        '--game-properties',
-        `Key=matchId,Value=${matchRequestId}`,
-        `Key=participants,Value=${party.join(',')}`,
-        `Key=xpAward,Value=${xpAward}`,
-        '--output', 'json',
-      ]);
+      await sendGameLift(gameLift, new StartGameSessionPlacementCommand({
+        PlacementId: placementId,
+        GameSessionQueueName: queueName,
+        GameSessionName: `match-${placementId}`,
+        MaximumPlayerSessionCount: maximumPlayerSessions,
+        DesiredPlayerSessions: party.map((PlayerId) => ({ PlayerId })),
+        PlayerLatencies: playerLatencies,
+        GameProperties: [
+          { Key: 'matchId', Value: matchRequestId },
+          { Key: 'participants', Value: party.join(',') },
+          { Key: 'xpAward', Value: String(xpAward) },
+        ],
+      }));
 
       const placement = await waitForFulfilledPlacement({
         placementId,
-        region,
-        awsJsonFn,
+        client: gameLift,
         sleepFn,
         timeoutMilliseconds,
       });
