@@ -7,6 +7,7 @@ import { createStageApproval, runStageApproval } from '../virtual-production/src
 const manifest = { production: 'arthurs-trials-demo', assetName: 'Castle_Set', version: 12, source: { package: 'Castle_Set_v12.umap' }, stageTarget: 'local-stage-workstation-demo', checks: { requiredFiles: ['Castle_Set_v12.umap'], estimatedBytes: 1024 } };
 const approval = createStageApproval({ manifest, approvedBy: 'stage-supervisor' });
 assert.equal(approval.versionId, 'Castle_Set_v12');
+assert.equal(approval.production, 'arthurs-trials-demo');
 assert.equal(approval.approval.status, 'Approved for Stage');
 assert.match(approval.approval.deploymentInstruction, /approved\/productions\/arthurs-trials-demo\/Castle_Set_v12/);
 assert.match(approval.scope, /No authenticated identity/i);

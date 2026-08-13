@@ -119,6 +119,24 @@ AWS template maps it to a federated approval identity, an auditable DynamoDB
 record, and a separate read-only stage role. No identity, record, object, or
 stage workstation exists in AWS.
 
+## Local stage selection proof
+
+An authorized approval can atomically select the exact version the local stage
+would launch. The script writes a small `current-stage.json` state record only
+after checking the approved production path; it rejects any record that is not
+`Approved for Stage`:
+
+```powershell
+node ./scripts/Run-VirtualProductionStageDeployment.mjs `
+  --approval ./logs/virtual-production/Castle_Set_v12-approval.json `
+  --stage-state ./logs/virtual-production/current-stage.json
+```
+
+The state record is intentionally not an Unreal launcher or an S3 download. It
+proves that stage selection follows the approval boundary. In production, the
+local stage launcher would retrieve this selected object version with its
+read-only role, then open it in Unreal locally.
+
 ## Production isolation
 
 Every workflow manifest carries a lowercase `production` identifier. Local

@@ -15,6 +15,7 @@ export function createStageApproval({ manifest, approvedBy, allowedApprovers = d
     workload: 'virtual-production',
     mode: 'local-simulation',
     event: 'stage_asset_approved',
+    production: manifest.production,
     versionId,
     stageTarget: manifest.stageTarget,
     approval: {

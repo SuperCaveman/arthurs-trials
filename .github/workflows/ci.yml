@@ -68,6 +68,9 @@ jobs:
       - name: Verify virtual-production approval authorization
         run: node scripts/Test-VirtualProductionApproval.mjs
 
+      - name: Verify virtual-production stage selection
+        run: node scripts/Test-VirtualProductionStageDeployment.mjs
+
       - name: Verify virtual-production audit ledger
         run: node scripts/Test-VirtualProductionAuditLedger.mjs
 
