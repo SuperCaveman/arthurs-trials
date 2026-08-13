@@ -11,6 +11,8 @@ function lifecycleEvents(serverLog) {
   const definitions = [
     ['GameLift server ready', /GameLift ProcessReady succeeded on port (\d+)/, (match) => `UDP ${match[1]} is accepting GameLift-managed sessions.`],
     ['Game session activated', /GameLift requested session activation:/, () => 'GameLift delivered the session to the dedicated server.'],
+    ['Player session admitted', /GameLift accepted a player session for /, () => 'The dedicated server accepted the GameLift-issued player-session credential.'],
+    ['Credential bound at server', /Bound validated GameLift player session to /, () => 'The server bound the validated session to the connecting player.'],
     ['Authoritative result published', /Authoritative match-completion event published to the local outbox for (\d+) participant/, (match) => `The server—not a client—published one completion event for ${match[1]} participant(s).`],
     ['GameLift termination handled', /GameLift requested process termination\./, () => 'GameLift requested shutdown; the server began its lifecycle cleanup.'],
     ['Dedicated server exited cleanly', /LogExit: Exiting\./, () => 'The local dedicated-server process exited after its GameLift callback.'],
@@ -21,6 +23,15 @@ function lifecycleEvents(serverLog) {
     const match = line?.match(pattern);
     return match ? [{ title, timestamp: timestampFor(line), description: description(match) }] : [];
   });
+}
+
+async function sessionApiEvidence(apiLogPath) {
+  if (!apiLogPath) return { placementRequested: false };
+  try {
+    return { placementRequested: /"event":"match_ready"|event:\s*'match_ready'/.test(await readFile(apiLogPath, 'utf8')) };
+  } catch {
+    return { placementRequested: false };
+  }
 }
 
 async function processedMatchEvents(outboxDirectory) {
@@ -53,18 +64,23 @@ function escapeHtml(value) {
   })[character]);
 }
 
-export async function collectOperationsEvidence({ serverLogPath, outboxDirectory }) {
+export async function collectOperationsEvidence({ serverLogPath, outboxDirectory, apiLogPath }) {
   const serverLog = await readFile(serverLogPath, 'utf8');
+  const [processedEvents, sessionApi] = await Promise.all([
+    processedMatchEvents(outboxDirectory),
+    sessionApiEvidence(apiLogPath),
+  ]);
   const events = lifecycleEvents(serverLog);
-  const processedEvents = await processedMatchEvents(outboxDirectory);
 
   return {
     generatedAt: new Date().toISOString(),
     source: 'Local GameLift Anywhere proof; no managed game-server capacity.',
     events,
     processedEvents,
+    sessionApi,
     posture: {
       gameLift: events.some((event) => event.title === 'GameLift server ready') ? 'observed' : 'not observed',
+      sessionApi: sessionApi.placementRequested ? 'observed' : 'not observed',
       serverToWorker: processedEvents.length > 0 ? 'observed' : 'not observed',
       managedCloud: 'not deployed',
       cloudWatch: 'planned',
@@ -87,10 +103,10 @@ export function renderOperationsDashboard(evidence) {
 <style>
 :root{color-scheme:dark;--ink:#eaf0ff;--muted:#aab8d8;--panel:#121a2c;--line:#29385b;--blue:#5ea9ff;--green:#62e5a5;--amber:#ffd369;background:#09101d}*{box-sizing:border-box}body{margin:0;font:16px/1.45 Inter,Segoe UI,Arial,sans-serif;color:var(--ink);background:radial-gradient(circle at 70% 0,#1c3565,transparent 36rem),#09101d}.wrap{max-width:1100px;margin:auto;padding:48px 28px 64px}.eyebrow{color:var(--green);font-weight:700;letter-spacing:.13em;text-transform:uppercase;font-size:.78rem}h1{font-size:clamp(2rem,5vw,4rem);line-height:1.04;margin:.4rem 0 1rem}p{color:var(--muted);margin:.25rem 0}.badges{display:flex;flex-wrap:wrap;gap:.55rem;margin:1.4rem 0 2rem}.badge{border:1px solid var(--line);border-radius:999px;padding:.38rem .7rem;font-size:.85rem;color:var(--muted)}.badge.good{border-color:#2f8a67;color:var(--green)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card,.timeline{background:linear-gradient(145deg,#17223a,#10182a);border:1px solid var(--line);border-radius:18px;padding:21px}.card h2,.timeline h2{font-size:1rem;margin:0 0 .7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.card strong{display:block;font-size:1.25rem}.card span{display:block;color:var(--muted);margin-top:.4rem}.timeline{margin-top:14px}.event{display:grid;grid-template-columns:175px 1fr;gap:16px;padding:17px 0;border-top:1px solid var(--line)}.event:first-of-type{border-top:0;padding-top:0}.event time{font-family:ui-monospace,Consolas,monospace;color:var(--blue);font-size:.88rem}.event h3{margin:0;font-size:1.1rem}.foot{margin-top:16px;font-size:.86rem}.empty{padding:1rem 0}@media(max-width:720px){.grid{grid-template-columns:1fr}.event{grid-template-columns:1fr;gap:3px}}
 </style></head><body><main class="wrap">
-<div class="eyebrow">Arthur's Trials · local operations proof</div><h1>GameLift session lifecycle,<br>from placement to reward.</h1>
+<div class="eyebrow">Arthur's Trials · local operations proof</div><h1>GameLift session lifecycle,<br>from API placement to server admission.</h1>
 <p>This is a sanitized, static view generated from local dedicated-server and results-worker evidence.</p>
-<div class="badges"><span class="badge good">GameLift Anywhere observed</span><span class="badge good">Authoritative results observed</span><span class="badge">Managed cloud not deployed</span><span class="badge">CloudWatch planned</span></div>
-<section class="grid"><div class="card"><h2>Control plane</h2><strong>GameLift Anywhere</strong><span>Local workstation registered as compute; no managed EC2 capacity.</span></div><div class="card"><h2>Server authority</h2><strong>Dedicated Unreal server</strong><span>Only the server writes match completion events.</span></div><div class="card"><h2>Results workflow</h2>${result}</div></section>
+<div class="badges"><span class="badge good">GameLift Anywhere observed</span><span class="badge ${evidence.sessionApi.placementRequested ? 'good' : ''}">Session API ${evidence.sessionApi.placementRequested ? 'observed' : 'not observed'}</span><span class="badge">Managed cloud not deployed</span><span class="badge">CloudWatch planned</span></div>
+<section class="grid"><div class="card"><h2>Control plane</h2><strong>GameLift Anywhere</strong><span>Local workstation registered as compute; no managed EC2 capacity.</span></div><div class="card"><h2>Session boundary</h2><strong>${evidence.sessionApi.placementRequested ? 'API placement issued' : 'API placement not observed'}</strong><span>The API returns only a short-lived player-session credential to the client.</span></div><div class="card"><h2>Server authority</h2><strong>Dedicated Unreal server</strong><span>GameLift admission is validated before the server binds a player.</span></div><div class="card"><h2>Results workflow</h2>${result}</div></section>
 <section class="timeline"><h2>Evidence timeline</h2>${timeline}</section><p class="foot">Generated ${escapeHtml(evidence.generatedAt)}. This dashboard intentionally excludes auth tokens, account IDs, GameLift session IDs, player-session IDs, IP connection credentials, and raw command lines.</p>
 </main></body></html>`;
 }
@@ -100,11 +116,12 @@ async function main() {
   const valueFor = (flag) => cliArguments[cliArguments.indexOf(flag) + 1];
   const serverLogPath = valueFor('--server-log');
   const outboxDirectory = valueFor('--outbox');
+  const apiLogPath = valueFor('--api-log');
   const outputPath = valueFor('--output');
   if (!serverLogPath || !outboxDirectory || !outputPath) {
     throw new Error('Usage: node scripts/Generate-LocalOperationsDashboard.mjs --server-log <path> --outbox <path> --output <path>');
   }
-  const evidence = await collectOperationsEvidence({ serverLogPath: resolve(serverLogPath), outboxDirectory: resolve(outboxDirectory) });
+  const evidence = await collectOperationsEvidence({ serverLogPath: resolve(serverLogPath), outboxDirectory: resolve(outboxDirectory), apiLogPath: apiLogPath ? resolve(apiLogPath) : undefined });
   await mkdir(dirname(resolve(outputPath)), { recursive: true });
   await writeFile(resolve(outputPath), renderOperationsDashboard(evidence), 'utf8');
   process.stdout.write(JSON.stringify({ event: 'local_operations_dashboard_generated', output: resolve(outputPath), evidence }) + '\n');

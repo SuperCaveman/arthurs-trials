@@ -25,11 +25,13 @@ After completing the optional match-results flow in the
 node ./scripts/Generate-LocalOperationsDashboard.mjs `
   --server-log ./build/WindowsServer-GameLift/ArthursTrials/Saved/Logs/ArthursTrials.log `
   --outbox ./logs/match-results-outbox-demo `
+  --api-log ./logs/capture-api/session-api.stdout.log `
   --output ./logs/dashboard/local-operations-proof.html
 ```
 
 Open the generated file in a browser for the recording. It displays only
-derived lifecycle labels, timestamps, participant count, and XP award. The
+derived lifecycle labels, timestamps, API-placement status, participant count,
+and XP award. The
 generator never embeds raw server-log content, account numbers, GameLift game
 session IDs, player-session IDs, auth tokens, or command lines.
 
