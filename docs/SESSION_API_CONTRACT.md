@@ -106,7 +106,7 @@ records a cancellation reason for support and metrics.
 | Invalid or expired JWT | `401` | Reauthenticate. | Authentication failure metric. |
 | Caller is not party owner | `403` | Do not retry automatically. | Authorization audit event. |
 | Same idempotency key | `200` with original result | Reuse the original response. | Idempotency-hit metric. |
-| No available capacity | `409` / `PLACEMENT_PENDING` | Poll within the supplied interval; show queue state. | Placement wait/failure metric. |
+| No available capacity | `409` / `PLACEMENT_PENDING` | Poll within the supplied interval; show queue state. | Placement wait/failure metric. The local API test maps GameLift's `FleetCapacityExceededException` to this response without exposing AWS details. |
 | Placement failed | `503` | Offer retry with a new idempotency key after a backoff. | Placement-failure alarm. |
 | Player session expired | `410` | Request a new match connection. | Expired-session metric. |
 

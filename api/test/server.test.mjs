@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { createFileMatchStore } from '../src/match-store.mjs';
 import { createCognitoJwtAuthenticator, createSessionApi } from '../src/server.mjs';
 
-async function startApi({ authenticate, store } = {}) {
+async function startApi({ authenticate, store, createMatch } = {}) {
   let calls = 0;
   let lastCreateMatchRequest;
   const server = createSessionApi({
@@ -16,6 +16,7 @@ async function startApi({ authenticate, store } = {}) {
       async createMatch(request) {
         calls += 1;
         lastCreateMatchRequest = request;
+        if (createMatch) return createMatch(request);
         return {
           address: '127.0.0.1',
           port: 7778,
@@ -117,6 +118,31 @@ test('rejects unauthenticated callers and parties that exclude the caller', asyn
   assert.equal(unauthenticated.status, 401);
   assert.equal(unauthorizedParty.status, 403);
   assert.equal(api.calls(), 0);
+});
+
+test('returns a player-safe retry response when game-server capacity is unavailable', async (t) => {
+  const api = await startApi({
+    createMatch() {
+      const error = new Error('simulated capacity exhaustion');
+      error.code = 'GAME_SERVER_CAPACITY_UNAVAILABLE';
+      throw error;
+    },
+  });
+  t.after(api.close);
+
+  const response = await fetch(`${api.baseUrl}/v1/matches`, {
+    method: 'POST',
+    headers: requestHeaders('andrew', '6f3afcae-cb35-447a-9170-df60e89ec2a2'),
+    body: JSON.stringify({ mode: 'co-op-defense', region: 'us-east-1', party: ['andrew'] }),
+  });
+
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    error: 'No game-server capacity is currently available.',
+    status: 'PLACEMENT_PENDING',
+    pollAfterSeconds: 2,
+  });
+  assert.equal(api.calls(), 1);
 });
 
 test('only the owning player can read a match request', async (t) => {

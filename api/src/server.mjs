@@ -21,6 +21,12 @@ function sendJson(response, statusCode, body) {
   response.end(JSON.stringify(body));
 }
 
+function capacityUnavailable() {
+  const error = new Error('No game-server capacity is currently available.');
+  error.code = 'GAME_SERVER_CAPACITY_UNAVAILABLE';
+  return error;
+}
+
 function publicMatch(match) {
   const { ownerId, ...response } = match;
   return response;
@@ -232,8 +238,18 @@ function requiredEnvironment(name, environment) {
 }
 
 async function awsJson(args) {
-  const { stdout } = await execFileAsync('aws', args, { windowsHide: true });
-  return JSON.parse(stdout);
+  try {
+    const { stdout } = await execFileAsync('aws', args, { windowsHide: true });
+    return JSON.parse(stdout);
+  } catch (error) {
+    // AWS CLI uses FleetCapacityExceededException when no Anywhere process
+    // can reserve a game session. Preserve that meaning for the API response
+    // without returning raw AWS error details to a player.
+    if (/FleetCapacityExceededException/i.test(`${error.stderr ?? ''}\n${error.message ?? ''}`)) {
+      throw capacityUnavailable();
+    }
+    throw error;
+  }
 }
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -367,6 +383,14 @@ export function createSessionApi({
 
       return sendJson(response, 404, { error: 'Route was not found.' });
     } catch (error) {
+      if (error.code === 'GAME_SERVER_CAPACITY_UNAVAILABLE') {
+        logger.info?.({ event: 'match_placement_pending', reason: 'capacity_unavailable' });
+        return sendJson(response, 409, {
+          error: 'No game-server capacity is currently available.',
+          status: 'PLACEMENT_PENDING',
+          pollAfterSeconds: 2,
+        });
+      }
       const statusCode = error.statusCode ?? 503;
       if (statusCode >= 500) logger.error?.({ event: 'session_api_error', message: error.message });
       return sendJson(response, statusCode, { error: error.statusCode ? error.message : 'Game session placement is unavailable.' });

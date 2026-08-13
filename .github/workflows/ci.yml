@@ -30,6 +30,9 @@ jobs:
         working-directory: api
         run: npm test
 
+      - name: Validate player-safe capacity exhaustion contract
+        run: node scripts/Test-SessionCapacityContract.mjs
+
       - name: Exercise the local API benchmark
         run: node scripts/Run-SessionApiLoadTest.mjs
 
