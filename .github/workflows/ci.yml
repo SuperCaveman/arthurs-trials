@@ -51,6 +51,9 @@ jobs:
       - name: Validate GameLift capacity and placement templates
         run: node scripts/Test-GameLiftCapacityTemplates.mjs
 
+      - name: Validate GameLift capacity model
+        run: node scripts/Test-GameLiftCapacityModel.mjs
+
       - name: Validate authoritative match-results contract
         run: node scripts/Test-AuthoritativeMatchResultsContract.mjs
 

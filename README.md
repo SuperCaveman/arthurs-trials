@@ -48,6 +48,11 @@ The managed-hosting plan also includes a placeholder-safe, locally validated
 latency-aware queue placement, revisioned fleet aliases, and conservative
 available-session scaling policies. It is not a deployed managed fleet.
 
+The complementary [capacity model](docs/GAMELIFT_CAPACITY_MODEL.md) turns
+measured server limits into defensible session-buffer and fleet-capacity
+decisions. Its checked-in inputs are clearly labelled assumptions until a
+managed Linux soak test is approved.
+
 The local, idempotent proof for the future asynchronous reward path is in the
 [match-results contract](docs/MATCH_RESULTS_CONTRACT.md).
 

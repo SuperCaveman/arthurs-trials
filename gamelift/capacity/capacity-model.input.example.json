@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "workload": "arthurs-trials-co-op-defense",
+  "measurementStatus": "example assumptions only; replace after a managed Linux server soak test",
+  "playersPerSession": 4,
+  "sessionsPerServerProcess": 1,
+  "serverProcessesPerInstance": 1,
+  "availableSessionBufferPercent": 25,
+  "instanceCapacity": {
+    "minimum": 0,
+    "maximum": 2
+  },
+  "estimatedScaleOutSeconds": 180,
+  "scenarios": [
+    { "name": "portfolio capture", "concurrentPlayers": 4 },
+    { "name": "small playtest", "concurrentPlayers": 12 },
+    { "name": "capacity boundary", "concurrentPlayers": 24 }
+  ]
+}
