@@ -16,7 +16,13 @@ output "planned_resource_boundary" {
     local.github_oidc_enabled ? ["permissionless GitHub Actions OIDC trust role"] : [],
     local.async_results_enabled ? ["SQS match-results queue and dead-letter queue"] : [],
     local.database_enabled ? ["private encrypted PostgreSQL RDS instance"] : [],
+    local.results_worker_enabled ? ["private ECS/Fargate results-worker service at desired count zero"] : [],
   )
+}
+
+output "results_worker_service_name" {
+  description = "Optional ECS results-worker service name; null in local mode."
+  value       = local.results_worker_enabled ? module.results_worker_runtime[0].service_name : null
 }
 
 output "vpc_id" {

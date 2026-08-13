@@ -63,6 +63,29 @@ variable "enable_database" {
   default     = false
 }
 
+variable "enable_results_worker_runtime" {
+  description = "Opt in to the private ECS/Fargate results-worker wiring only during an approved managed demo. Requires queue and database foundations."
+  type        = bool
+  default     = false
+}
+
+variable "results_worker_image_uri" {
+  description = "Immutable ECR image URI for the results worker; required only when its runtime is enabled."
+  type        = string
+  default     = ""
+}
+
+variable "results_worker_desired_count" {
+  description = "Initial Fargate worker desired count. Keep zero until a separately approved runtime test."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.results_worker_desired_count >= 0 && var.results_worker_desired_count <= 2
+    error_message = "results_worker_desired_count must be between zero and two for the portfolio demo."
+  }
+}
+
 variable "github_repository" {
   description = "GitHub repository allowed in the future OIDC trust policy."
   type        = string

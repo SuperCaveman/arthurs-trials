@@ -50,3 +50,10 @@ single-process proof only. A future managed demo must add the application and
 worker task security groups, migrate the schema, run an authenticated smoke
 test, then demonstrate a restore/teardown path before this can be described as
 deployed persistence.
+
+The Terraform runtime template now supplies a no-ingress results-worker
+security group to the database module only when the optional worker runtime is
+enabled. The worker consumes SQS with a task role and reads the RDS-managed
+secret at startup. The initial RDS secret is an administrative bootstrap
+credential, so a real deployment must run the supplied schema migration and
+create a narrower application database role before processing player results.

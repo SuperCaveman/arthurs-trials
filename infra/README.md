@@ -5,7 +5,9 @@ zero AWS resources. The optional slices currently model a two-AZ network
 foundation, Cognito player identity, a permissionless GitHub Actions OIDC
 trust role, an SQS/DLQ asynchronous-results foundation, and a private RDS
 PostgreSQL foundation; none is enabled by default. It does not yet create ALB,
-ECS, or managed GameLift capacity.
+or managed GameLift capacity. A desired-zero ECS/Fargate results-worker runtime
+is also available only behind its own managed-demo gate; it does not start a
+task unless an approved operator raises its desired count.
 
 ## Safe local validation
 
@@ -51,6 +53,13 @@ private, encrypted PostgreSQL instance. It starts with no ingress and requires
 future application/worker security groups to be explicitly allowed. See the
 [database foundation](../docs/DATABASE_FOUNDATION.md) for the security,
 recovery, and teardown boundary.
+
+Set `enable_results_worker_runtime=true` only with both of those foundations
+and a revision-pinned `results_worker_image_uri`. It creates a private,
+no-ingress ECS/Fargate worker definition and service at desired count zero. It
+does **not** create NAT gateways or VPC endpoints; select and document one
+private-egress strategy before any approved task launch. See the
+[asynchronous-results foundation](../docs/ASYNC_RESULTS_FOUNDATION.md).
 
 See the [security and delivery foundation](../docs/SECURITY_DELIVERY_FOUNDATION.md)
 for the trust boundary, cost posture, and production-scale changes.

@@ -1,0 +1,12 @@
+variable "name_prefix" { type = string }
+variable "cluster_arn" { type = string }
+variable "execution_role_arn" { type = string }
+variable "task_role_name" { type = string }
+variable "task_role_arn" { type = string }
+variable "security_group_id" { type = string }
+variable "private_subnet_ids" { type = list(string) }
+variable "match_results_queue_url" { type = string }
+variable "database_secret_arn" { type = string }
+variable "worker_image_uri" { type = string }
+variable "desired_count" { type = number }
+variable "tags" { type = map(string) }

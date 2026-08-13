@@ -24,6 +24,7 @@ game/ArthursTrials/v*_clang-*-rockylinux*.exe
 scripts/GameLiftAnywhere.dev.psd1
 api/.env
 api/node_modules/
+worker/node_modules/
 infra/.terraform/
 infra/*.tfstate
 infra/*.tfstate.*

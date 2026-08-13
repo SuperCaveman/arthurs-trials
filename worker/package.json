@@ -5,7 +5,13 @@
   "type": "module",
   "scripts": {
     "start": "node src/worker.mjs",
+    "start:sqs": "node src/sqs-consumer.mjs",
     "test": "node --test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.0.0",
+    "@aws-sdk/client-sqs": "^3.0.0",
+    "pg": "^8.0.0"
   },
   "engines": {
     "node": ">=20"

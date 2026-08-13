@@ -65,7 +65,12 @@ jobs:
 
       - name: Test local match-results worker
         working-directory: worker
-        run: npm test
+        run: |
+          npm ci
+          npm test
+
+      - name: Validate results-worker managed runtime template
+        run: node scripts/Test-ResultsWorkerRuntimeContract.mjs
 
       - name: Build session API container
         working-directory: api

@@ -5,6 +5,7 @@ locals {
   github_oidc_enabled    = local.managed_demo_enabled && var.enable_github_actions_oidc
   async_results_enabled  = local.managed_demo_enabled && var.enable_async_results
   database_enabled       = local.managed_demo_enabled && var.enable_database
+  results_worker_enabled = local.managed_demo_enabled && var.enable_results_worker_runtime
 
   common_tags = {
     project        = "arthurs-trials"
@@ -36,7 +37,7 @@ provider "aws" {
 # preconditions deliberately make "terraform plan -var deployment_mode=demo"
 # fail unless the operator supplies a real expiration and explicit consent.
 resource "terraform_data" "managed_demo_gate" {
-  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc || var.enable_async_results || var.enable_database ? 1 : 0
+  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc || var.enable_async_results || var.enable_database || var.enable_results_worker_runtime ? 1 : 0
 
   input = {
     region     = var.aws_region
@@ -72,6 +73,21 @@ resource "terraform_data" "managed_demo_gate" {
     precondition {
       condition     = !var.enable_database || local.managed_demo_enabled
       error_message = "Database is blocked in local mode. Use deployment_mode=demo and allow_managed_demo=true only for an approved, time-boxed test."
+    }
+
+    precondition {
+      condition     = !var.enable_results_worker_runtime || local.managed_demo_enabled
+      error_message = "Results-worker runtime is blocked in local mode. Use deployment_mode=demo and allow_managed_demo=true only for an approved, time-boxed test."
+    }
+
+    precondition {
+      condition     = !var.enable_results_worker_runtime || (local.async_results_enabled && local.database_enabled)
+      error_message = "Results-worker runtime requires both enable_async_results=true and enable_database=true."
+    }
+
+    precondition {
+      condition     = !var.enable_results_worker_runtime || trimspace(var.results_worker_image_uri) != ""
+      error_message = "results_worker_image_uri is required when enable_results_worker_runtime=true."
     }
 
     precondition {
@@ -121,6 +137,19 @@ module "async_results" {
   tags        = local.common_tags
 }
 
+# This access slice is deliberately separate from the task definition so its
+# security group can be the database's only ingress source without creating a
+# Terraform dependency cycle. It creates no task by itself.
+module "results_worker_access" {
+  count  = local.results_worker_enabled ? 1 : 0
+  source = "./modules/results-worker-access"
+
+  name_prefix       = "arthurs-trials-${var.deployment_mode}"
+  vpc_id            = module.network[0].vpc_id
+  match_results_arn = module.async_results[0].queue_arn
+  tags              = local.common_tags
+}
+
 # The database is private by construction and starts with zero ingress. Future
 # application/worker modules must opt in with security-group references.
 module "database" {
@@ -130,5 +159,30 @@ module "database" {
   name_prefix        = "arthurs-trials-${var.deployment_mode}"
   vpc_id             = module.network[0].vpc_id
   private_subnet_ids = module.network[0].private_subnet_ids
-  tags               = local.common_tags
+  allowed_security_group_ids = local.results_worker_enabled ? [
+    module.results_worker_access[0].security_group_id,
+  ] : []
+  tags = local.common_tags
+}
+
+# The service starts at desired count zero. It is a deployment-ready wiring
+# template, not permission to run paid compute. Before an approved launch, the
+# operator must choose private VPC endpoints or a NAT strategy for ECR, SQS,
+# CloudWatch Logs, and Secrets Manager.
+module "results_worker_runtime" {
+  count  = local.results_worker_enabled ? 1 : 0
+  source = "./modules/results-worker-runtime"
+
+  name_prefix             = "arthurs-trials-${var.deployment_mode}"
+  cluster_arn             = module.results_worker_access[0].cluster_arn
+  execution_role_arn      = module.results_worker_access[0].execution_role_arn
+  task_role_name          = module.results_worker_access[0].task_role_name
+  task_role_arn           = module.results_worker_access[0].task_role_arn
+  security_group_id       = module.results_worker_access[0].security_group_id
+  private_subnet_ids      = module.network[0].private_subnet_ids
+  match_results_queue_url = module.async_results[0].queue_url
+  database_secret_arn     = module.database[0].master_user_secret_arn
+  worker_image_uri        = var.results_worker_image_uri
+  desired_count           = var.results_worker_desired_count
+  tags                    = local.common_tags
 }
