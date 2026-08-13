@@ -60,6 +60,9 @@ jobs:
       - name: Validate asynchronous-results Terraform contract
         run: node scripts/Test-AsyncResultsTerraformContract.mjs
 
+      - name: Validate database Terraform contract
+        run: node scripts/Test-DatabaseTerraformContract.mjs
+
       - name: Test local match-results worker
         working-directory: worker
         run: npm test

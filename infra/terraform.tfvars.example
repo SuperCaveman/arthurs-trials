@@ -7,6 +7,7 @@ expires_at         = "UNSET"
 enable_identity    = false
 enable_github_actions_oidc = false
 enable_async_results = false
+enable_database      = false
 github_repository  = "SuperCaveman/arthurs-trials"
 
 # Required only when enable_github_actions_oidc is true. Use an existing,
@@ -20,4 +21,5 @@ github_actions_oidc_provider_arn = ""
 # enable_identity    = true
 # enable_github_actions_oidc = true
 # enable_async_results = true
+# enable_database      = true
 # github_actions_oidc_provider_arn = "arn:aws:iam::<account-id>:oidc-provider/token.actions.githubusercontent.com"

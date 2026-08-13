@@ -3,8 +3,9 @@
 This Terraform root is intentionally **default-off**. Its `local` mode plans
 zero AWS resources. The optional slices currently model a two-AZ network
 foundation, Cognito player identity, a permissionless GitHub Actions OIDC
-trust role, and an SQS/DLQ asynchronous-results foundation; none is enabled by
-default. It does not yet create ALB, ECS, RDS, or managed GameLift capacity.
+trust role, an SQS/DLQ asynchronous-results foundation, and a private RDS
+PostgreSQL foundation; none is enabled by default. It does not yet create ALB,
+ECS, or managed GameLift capacity.
 
 ## Safe local validation
 
@@ -44,6 +45,12 @@ Set `enable_async_results=true` only for the same approved demo window to add
 the encrypted match-results queue and its DLQ. See the
 [asynchronous-results foundation](../docs/ASYNC_RESULTS_FOUNDATION.md) for the
 event, IAM, recovery, and cost boundaries.
+
+Set `enable_database=true` only for the same approved demo window to add the
+private, encrypted PostgreSQL instance. It starts with no ingress and requires
+future application/worker security groups to be explicitly allowed. See the
+[database foundation](../docs/DATABASE_FOUNDATION.md) for the security,
+recovery, and teardown boundary.
 
 See the [security and delivery foundation](../docs/SECURITY_DELIVERY_FOUNDATION.md)
 for the trust boundary, cost posture, and production-scale changes.

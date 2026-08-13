@@ -57,6 +57,12 @@ variable "enable_async_results" {
   default     = false
 }
 
+variable "enable_database" {
+  description = "Opt in to the private PostgreSQL/RDS foundation only during an approved managed demo."
+  type        = bool
+  default     = false
+}
+
 variable "github_repository" {
   description = "GitHub repository allowed in the future OIDC trust policy."
   type        = string

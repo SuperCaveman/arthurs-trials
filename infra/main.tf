@@ -4,6 +4,7 @@ locals {
   identity_enabled       = local.managed_demo_enabled && var.enable_identity
   github_oidc_enabled    = local.managed_demo_enabled && var.enable_github_actions_oidc
   async_results_enabled  = local.managed_demo_enabled && var.enable_async_results
+  database_enabled       = local.managed_demo_enabled && var.enable_database
 
   common_tags = {
     project        = "arthurs-trials"
@@ -35,7 +36,7 @@ provider "aws" {
 # preconditions deliberately make "terraform plan -var deployment_mode=demo"
 # fail unless the operator supplies a real expiration and explicit consent.
 resource "terraform_data" "managed_demo_gate" {
-  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc || var.enable_async_results ? 1 : 0
+  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc || var.enable_async_results || var.enable_database ? 1 : 0
 
   input = {
     region     = var.aws_region
@@ -66,6 +67,11 @@ resource "terraform_data" "managed_demo_gate" {
     precondition {
       condition     = !var.enable_async_results || local.managed_demo_enabled
       error_message = "Asynchronous results are blocked in local mode. Use deployment_mode=demo and allow_managed_demo=true only for an approved, time-boxed test."
+    }
+
+    precondition {
+      condition     = !var.enable_database || local.managed_demo_enabled
+      error_message = "Database is blocked in local mode. Use deployment_mode=demo and allow_managed_demo=true only for an approved, time-boxed test."
     }
 
     precondition {
@@ -113,4 +119,16 @@ module "async_results" {
 
   name_prefix = "arthurs-trials-${var.deployment_mode}"
   tags        = local.common_tags
+}
+
+# The database is private by construction and starts with zero ingress. Future
+# application/worker modules must opt in with security-group references.
+module "database" {
+  count  = local.database_enabled ? 1 : 0
+  source = "./modules/database"
+
+  name_prefix        = "arthurs-trials-${var.deployment_mode}"
+  vpc_id             = module.network[0].vpc_id
+  private_subnet_ids = module.network[0].private_subnet_ids
+  tags               = local.common_tags
 }

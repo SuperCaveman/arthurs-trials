@@ -15,6 +15,7 @@ output "planned_resource_boundary" {
     local.identity_enabled ? ["Cognito user pool and public Unreal app client"] : [],
     local.github_oidc_enabled ? ["permissionless GitHub Actions OIDC trust role"] : [],
     local.async_results_enabled ? ["SQS match-results queue and dead-letter queue"] : [],
+    local.database_enabled ? ["private encrypted PostgreSQL RDS instance"] : [],
   )
 }
 
@@ -41,4 +42,14 @@ output "match_results_queue_arn" {
 output "match_results_dead_letter_queue_arn" {
   description = "Optional SQS match-results DLQ ARN; null in local mode."
   value       = local.async_results_enabled ? module.async_results[0].dead_letter_queue_arn : null
+}
+
+output "postgres_endpoint" {
+  description = "Optional private PostgreSQL endpoint; null in local mode."
+  value       = local.database_enabled ? module.database[0].endpoint : null
+}
+
+output "postgres_master_user_secret_arn" {
+  description = "Optional RDS-managed secret ARN; null in local mode."
+  value       = local.database_enabled ? module.database[0].master_user_secret_arn : null
 }
