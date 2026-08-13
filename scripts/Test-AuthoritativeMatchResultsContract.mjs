@@ -16,9 +16,9 @@ const sessionHelper = await readFile(sessionHelperPath, 'utf8');
 const stopSessionHelper = await readFile(stopSessionHelperPath, 'utf8');
 const launcher = await readFile(launcherPath, 'utf8');
 
-assert.match(api, /Key=matchId,Value=\$\{matchRequestId\}/);
-assert.match(api, /Key=participants,Value=\$\{party\.join\(','\)\}/);
-assert.match(api, /Key=xpAward,Value=\$\{xpAward\}/);
+assert.match(api, /\{ Key: 'matchId', Value: matchRequestId \}/);
+assert.match(api, /\{ Key: 'participants', Value: party\.join\(','\) \}/);
+assert.match(api, /\{ Key: 'xpAward', Value: String\(xpAward\) \}/);
 assert.match(gameMode, /ConfigureMatchResults\(GameProperties\)/);
 assert.match(gameMode, /AsyncTask\(ENamedThreads::GameThread/);
 assert.match(gameMode, /Authoritative match-completion event published to the local outbox/);
