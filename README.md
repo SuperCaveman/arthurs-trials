@@ -1,6 +1,10 @@
-# Arthur's Trials — AWS Multiplayer Platform
+# Arthur's Trials — Game Development Multiplayer Platform
 
 **A cost-aware, production-shaped cloud/platform engineering case study.**
+
+> **Portfolio focus: multiplayer game development.** This is a cost-aware
+> dedicated-server and backend platform for game development teams building
+> Unreal Engine multiplayer games.
 
 Arthur's Trials is a deliberately tiny 2–4 player Unreal Engine co-op vertical slice. The game is the workload, not the portfolio's whole story. The actual project is an AWS multiplayer platform: a secure web/API control plane, containerized dedicated servers, infrastructure as code, automated delivery, observability, reliability experiments, and a measured scaling model.
 
@@ -8,14 +12,14 @@ Amazon GameLift Servers is the distinctive hosting layer, but it is only one par
 
 The project starts with local multiplayer and an Amazon GameLift Servers Anywhere fleet, then supports a short, deliberately time-boxed managed-cloud demonstration. It is designed so that the public portfolio shows real integrations and operational judgment without paying to keep a fleet running.
 
-## Unified platform architecture
+## Game-development multiplayer architecture
 
-![Unified gaming and virtual-production platform architecture](docs/assets/unreal-cloud-platform-architecture.svg)
+![Game-development multiplayer platform architecture](docs/assets/arthurs-trials-architecture.svg)
 
-The visual separates real local evidence from the validated, default-off AWS
-design. It is explicit that AWS supports virtual-production workflow around a
-local stage rather than the latency-sensitive stage render itself. See the
-[architecture guide](docs/ARCHITECTURE.md).
+The visual separates working local GameLift evidence from the validated,
+default-off managed AWS design. It is aimed at multiplayer game developers,
+backend/cloud engineers, technical directors, studio leads, and live-operations
+teams. See the [architecture guide](docs/ARCHITECTURE.md).
 
 ## What this should prove
 
@@ -28,9 +32,6 @@ local stage rather than the latency-sensitive stage render itself. See the
 - Operational readiness: structured logs, dashboards, CloudWatch-to-SNS alarms, a runbook, graceful shutdown, and controlled failure tests.
 - A defensible scale path from a local four-player match to regional, multi-region hosting.
 - Practical FinOps: every resource is tagged, managed capacity is opt-in, and teardown is part of the demo.
-- A reusable Unreal workflow platform: versioned virtual-production assets,
-  role-gated approval, stage delivery, recovery, and audit status without a
-  persistent GPU fleet.
 
 ## Portfolio claim
 
@@ -83,13 +84,6 @@ The bounded local control-plane load evidence is documented in the
 [placement simulation guide](docs/LOCAL_PLACEMENT_SIMULATION.md). It creates
 explicitly scoped CSV/JSON/SVG artifacts without calling AWS.
 
-After the gaming proof, the same platform begins a second, local-first
-[virtual-production workflow](docs/VIRTUAL_PRODUCTION_FOUNDATION.md): a remote
-artist version such as `Castle_Set_v12` moves through validation, approval, and
-local-stage deployment without moving latency-sensitive rendering into AWS.
-Its future default-off cloud test is bounded by a dedicated
-[managed-demo runbook](docs/VIRTUAL_PRODUCTION_MANAGED_DEMO_RUNBOOK.md).
-
 The local retry and poison-message handling proof is documented in the
 [results-worker resilience guide](docs/RESULTS_WORKER_RESILIENCE.md). It
 exercises the worker's SQS decision path without creating a queue.
@@ -114,8 +108,15 @@ follow the [local runbook](docs/RUNBOOK.md).
 The major cost, security, and delivery trade-offs are recorded in
 [architecture decisions](docs/DECISIONS.md).
 
-The cross-workload trust boundaries and verified-vs-planned controls are in the
+The gaming trust boundaries and verified-vs-planned controls are in the
 [threat model](docs/THREAT_MODEL.md).
+
+## Parked future extension
+
+The repository retains earlier virtual-production research in the
+`virtual-production/` directory, but it is deliberately parked.
+It is not part of the current portfolio claim, canonical architecture, demo
+video, or AWS deployment plan. See [the scope note](docs/PARKED_FUTURE_WORK.md).
 
 ## Cost posture
 

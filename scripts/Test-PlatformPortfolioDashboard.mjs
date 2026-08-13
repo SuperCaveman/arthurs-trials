@@ -11,11 +11,11 @@ try {
   const { stdout } = await promisify(execFile)(process.execPath, ['./scripts/Generate-PlatformPortfolioDashboard.mjs', '--output', output], { cwd: process.cwd() });
   assert.match(stdout, /cloudResourcesCreated":false/);
   const html = await readFile(output, 'utf8');
-  assert.match(html, /Unreal Engine Cloud Platform/);
+  assert.match(html, /Game Development/);
   assert.match(html, /GameLift Servers Anywhere/);
-  assert.match(html, /Castle_Set_v12/);
+  assert.match(html, /game development teams/);
   assert.match(html, /No managed AWS resources deployed/);
-  assert.match(html, /unreal-cloud-platform-architecture\.svg/);
-  assert.doesNotMatch(html, /accessKey|secretAccessKey|arn:aws:iam/i);
-  console.log('Verified: the platform portfolio dashboard presents local proof and default-off boundaries without credentials or deployment claims.');
+  assert.match(html, /arthurs-trials-architecture\.svg/);
+  assert.doesNotMatch(html, /virtual production|Castle_Set|accessKey|secretAccessKey|arn:aws:iam/i);
+  console.log('Verified: the portfolio dashboard presents game-development multiplayer evidence and default-off boundaries without credentials or deployment claims.');
 } finally { await rm(root, { recursive: true, force: true }); }

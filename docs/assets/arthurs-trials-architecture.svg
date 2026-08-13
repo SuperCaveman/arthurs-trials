@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080" role="img" aria-labelledby="title desc">
-  <title id="title">Arthur's Trials AWS multiplayer platform architecture</title>
-  <desc id="desc">A two-lane architecture diagram. The upper lane shows the locally verified Unreal and GameLift Servers Anywhere proof. The lower lane shows the default-off planned managed AWS architecture with Cognito, an ALB, ECS session API and results worker, GameLift queues and managed container fleets, SQS, RDS, CloudWatch and CI release evidence.</desc>
+  <title id="title">Arthur's Trials game-development multiplayer platform architecture</title>
+  <desc id="desc">A two-lane architecture diagram for game-development teams. The upper lane shows the locally verified Unreal and GameLift Servers Anywhere proof. The lower lane shows the default-off planned managed AWS architecture with Cognito, an ALB, ECS session API and results worker, GameLift queues and managed container fleets, SQS, RDS, CloudWatch and CI release evidence.</desc>
   <defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#07111f"/><stop offset="1" stop-color="#101c32"/></linearGradient>
     <linearGradient id="verified" x1="0" x2="1"><stop stop-color="#163e47"/><stop offset="1" stop-color="#145060"/></linearGradient>
@@ -21,8 +21,8 @@
     </style>
   </defs>
   <rect width="1600" height="1080" fill="url(#bg)"/>
-  <text x="70" y="74" class="title">Arthur's Trials — Unreal Engine Cloud Platform on AWS</text>
-  <text x="70" y="108" class="subtitle">A production-shaped multiplayer platform: verified local GameLift lifecycle above, default-off managed AWS design below.</text>
+  <text x="70" y="74" class="title">Arthur's Trials — Game Development Multiplayer Platform</text>
+  <text x="70" y="108" class="subtitle">For game-development teams: verified local GameLift lifecycle above, default-off managed AWS design below.</text>
 
   <rect x="60" y="145" width="1480" height="350" rx="24" fill="url(#verified)" stroke="#51d6c9" stroke-width="2" filter="url(#shadow)"/>
   <rect x="90" y="170" width="106" height="28" rx="14" fill="#51d6c9"/>
