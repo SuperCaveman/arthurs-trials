@@ -28,7 +28,7 @@ test('drains authoritative outbox events and preserves exactly-once reward handl
   const results = await drainMatchResultsOutbox({ outboxDirectory, worker, logger: { info() {}, error() {} } });
 
   assert.deepEqual(results.map((result) => result.disposition), ['PROCESSED', 'DUPLICATE']);
-  assert.equal(store.getXp('andrew'), 125);
+  assert.equal(await store.getXp('andrew'), 125);
   assert.deepEqual(JSON.parse(await readFile(join(outboxDirectory, 'processed', 'first.json'), 'utf8')), event);
   assert.deepEqual(JSON.parse(await readFile(join(outboxDirectory, 'processed', 'duplicate.json'), 'utf8')), event);
 });
@@ -42,6 +42,6 @@ test('quarantines malformed outbox payloads without changing rewards', async () 
   const results = await drainMatchResultsOutbox({ outboxDirectory, worker, logger: { info() {}, error() {} } });
 
   assert.equal(results[0].disposition, 'REJECTED');
-  assert.equal(store.getXp('andrew'), 0);
+  assert.equal(await store.getXp('andrew'), 0);
   assert.equal(await readFile(join(outboxDirectory, 'rejected', 'invalid.json'), 'utf8'), '{not json');
 });

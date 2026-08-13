@@ -36,8 +36,12 @@ fires. Clients do not submit completion events or determine rewards.
 The file outbox is deliberately a narrow local substitute for SQS. The server
 writes a complete JSON document to a temporary file and then moves it into the
 outbox. The worker moves successfully handled events to `processed/` and bad
-payloads to `rejected/`. It is useful for proving producer/consumer behavior,
-but it is not durable, distributed, or a production queue.
+payloads to `rejected/`. Its default store is in memory. An opt-in local file
+store atomically replaces a single document that contains both the event-ID
+receipt and player XP, so a repeat delivery after one worker restart returns
+`DUPLICATE` without an additional reward. It is useful for proving the
+producer/consumer and transaction boundary, but it is not durable,
+distributed, or a production queue/database.
 
 The GameLift Anywhere adapter creates the game session with these server-only
 properties:

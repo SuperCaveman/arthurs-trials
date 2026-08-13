@@ -1,5 +1,6 @@
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
+import { createFileResultsStore, createInMemoryResultsStore } from './results-store.mjs';
 
 const PLAYER_ID_PATTERN = /^[A-Za-z0-9._-]{3,64}$/;
 const EVENT_ID_PATTERN = /^[A-Za-z0-9-]{16,128}$/;
@@ -32,40 +33,18 @@ function validateCompletedMatch(event) {
   }
 }
 
-export function createInMemoryResultsStore() {
-  const processedEvents = new Set();
-  const playerXp = new Map();
-
-  return {
-    hasProcessed(eventId) {
-      return processedEvents.has(eventId);
-    },
-    markProcessed(eventId) {
-      processedEvents.add(eventId);
-    },
-    addXp(playerId, amount) {
-      playerXp.set(playerId, (playerXp.get(playerId) ?? 0) + amount);
-    },
-    getXp(playerId) {
-      return playerXp.get(playerId) ?? 0;
-    },
-  };
-}
+export { createFileResultsStore, createInMemoryResultsStore } from './results-store.mjs';
 
 export function createResultsWorker({ store = createInMemoryResultsStore(), logger = console } = {}) {
   return {
-    process(event) {
+    async process(event) {
       validateCompletedMatch(event);
 
-      if (store.hasProcessed(event.eventId)) {
+      if (!(await store.applyOnce(event))) {
         logger.info?.({ event: 'match_result_duplicate', eventId: event.eventId, matchId: event.matchId });
         return { disposition: 'DUPLICATE', eventId: event.eventId, matchId: event.matchId };
       }
 
-      for (const playerId of event.participants) {
-        store.addXp(playerId, event.xpAward);
-      }
-      store.markProcessed(event.eventId);
       logger.info?.({
         event: 'match_result_processed',
         eventId: event.eventId,
@@ -78,13 +57,18 @@ export function createResultsWorker({ store = createInMemoryResultsStore(), logg
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const worker = createResultsWorker();
+  const storeName = process.env.RESULTS_STORE ?? 'memory';
+  if (!['memory', 'file'].includes(storeName)) throw new Error('RESULTS_STORE must be memory or file.');
+  const store = storeName === 'file'
+    ? createFileResultsStore({ path: process.env.RESULTS_STORE_PATH })
+    : createInMemoryResultsStore();
+  const worker = createResultsWorker({ store });
   const input = createInterface({ input: process.stdin, crlfDelay: Infinity });
 
   for await (const line of input) {
     if (!line.trim()) continue;
     try {
-      const result = worker.process(JSON.parse(line));
+      const result = await worker.process(JSON.parse(line));
       process.stdout.write(`${JSON.stringify(result)}\n`);
     } catch (error) {
       process.stderr.write(`${JSON.stringify({ event: 'match_result_rejected', message: error.message })}\n`);

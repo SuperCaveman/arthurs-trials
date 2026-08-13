@@ -31,7 +31,7 @@ export async function drainMatchResultsOutbox({ outboxDirectory, worker = create
   for (const eventPath of eventFiles) {
     try {
       const event = JSON.parse(await readFile(eventPath, 'utf8'));
-      const result = worker.process(event);
+      const result = await worker.process(event);
       await moveEvent(eventPath, processedDirectory);
       logger.info?.({ event: 'match_result_outbox_processed', file: basename(eventPath), disposition: result.disposition });
       results.push(result);
@@ -47,6 +47,11 @@ export async function drainMatchResultsOutbox({ outboxDirectory, worker = create
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const outboxDirectory = process.argv[2] ?? join(dirname(fileURLToPath(import.meta.url)), '../../game/ArthursTrials/Saved/MatchResultsOutbox');
-  const results = await drainMatchResultsOutbox({ outboxDirectory });
+  const storeName = process.env.RESULTS_STORE ?? 'memory';
+  if (!['memory', 'file'].includes(storeName)) throw new Error('RESULTS_STORE must be memory or file.');
+  const store = storeName === 'file'
+    ? (await import('./results-store.mjs')).createFileResultsStore({ path: process.env.RESULTS_STORE_PATH })
+    : (await import('./results-store.mjs')).createInMemoryResultsStore();
+  const results = await drainMatchResultsOutbox({ outboxDirectory, worker: createResultsWorker({ store }) });
   process.stdout.write(`${JSON.stringify({ event: 'match_results_outbox_drained', count: results.length, results })}\n`);
 }
