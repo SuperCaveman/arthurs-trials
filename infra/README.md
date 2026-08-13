@@ -2,9 +2,9 @@
 
 This Terraform root is intentionally **default-off**. Its `local` mode plans
 zero AWS resources. The optional slices currently model a two-AZ network
-foundation, Cognito player identity, and a permissionless GitHub Actions OIDC
-trust role; none is enabled by default. It does not yet create ALB, ECS, RDS,
-SQS, or managed GameLift capacity.
+foundation, Cognito player identity, a permissionless GitHub Actions OIDC
+trust role, and an SQS/DLQ asynchronous-results foundation; none is enabled by
+default. It does not yet create ALB, ECS, RDS, or managed GameLift capacity.
 
 ## Safe local validation
 
@@ -39,6 +39,11 @@ approved plan, set `enable_identity=true` and/or
 `enable_github_actions_oidc=true`. OIDC additionally requires the account's
 existing GitHub Actions provider ARN. The role contains trust only, not AWS
 permissions; future resource modules will supply narrowly scoped policies.
+
+Set `enable_async_results=true` only for the same approved demo window to add
+the encrypted match-results queue and its DLQ. See the
+[asynchronous-results foundation](../docs/ASYNC_RESULTS_FOUNDATION.md) for the
+event, IAM, recovery, and cost boundaries.
 
 See the [security and delivery foundation](../docs/SECURITY_DELIVERY_FOUNDATION.md)
 for the trust boundary, cost posture, and production-scale changes.

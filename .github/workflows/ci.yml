@@ -57,6 +57,9 @@ jobs:
       - name: Validate security and delivery foundation
         run: node scripts/Test-SecurityDeliveryFoundation.mjs
 
+      - name: Validate asynchronous-results Terraform contract
+        run: node scripts/Test-AsyncResultsTerraformContract.mjs
+
       - name: Test local match-results worker
         working-directory: worker
         run: npm test

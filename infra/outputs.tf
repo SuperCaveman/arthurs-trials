@@ -14,6 +14,7 @@ output "planned_resource_boundary" {
     ] : [],
     local.identity_enabled ? ["Cognito user pool and public Unreal app client"] : [],
     local.github_oidc_enabled ? ["permissionless GitHub Actions OIDC trust role"] : [],
+    local.async_results_enabled ? ["SQS match-results queue and dead-letter queue"] : [],
   )
 }
 
@@ -30,4 +31,14 @@ output "cognito_user_pool_id" {
 output "github_actions_oidc_role_arn" {
   description = "Optional permissionless GitHub OIDC trust role; null in local mode."
   value       = local.github_oidc_enabled ? module.github_oidc[0].role_arn : null
+}
+
+output "match_results_queue_arn" {
+  description = "Optional SQS match-results queue ARN; null in local mode."
+  value       = local.async_results_enabled ? module.async_results[0].queue_arn : null
+}
+
+output "match_results_dead_letter_queue_arn" {
+  description = "Optional SQS match-results DLQ ARN; null in local mode."
+  value       = local.async_results_enabled ? module.async_results[0].dead_letter_queue_arn : null
 }

@@ -3,6 +3,7 @@ locals {
   managed_demo_enabled   = local.managed_demo_requested && var.allow_managed_demo
   identity_enabled       = local.managed_demo_enabled && var.enable_identity
   github_oidc_enabled    = local.managed_demo_enabled && var.enable_github_actions_oidc
+  async_results_enabled  = local.managed_demo_enabled && var.enable_async_results
 
   common_tags = {
     project        = "arthurs-trials"
@@ -34,7 +35,7 @@ provider "aws" {
 # preconditions deliberately make "terraform plan -var deployment_mode=demo"
 # fail unless the operator supplies a real expiration and explicit consent.
 resource "terraform_data" "managed_demo_gate" {
-  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc ? 1 : 0
+  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc || var.enable_async_results ? 1 : 0
 
   input = {
     region     = var.aws_region
@@ -60,6 +61,11 @@ resource "terraform_data" "managed_demo_gate" {
     precondition {
       condition     = !var.enable_github_actions_oidc || local.managed_demo_enabled
       error_message = "GitHub OIDC trust is blocked in local mode. Use deployment_mode=demo and allow_managed_demo=true only for an approved, time-boxed test."
+    }
+
+    precondition {
+      condition     = !var.enable_async_results || local.managed_demo_enabled
+      error_message = "Asynchronous results are blocked in local mode. Use deployment_mode=demo and allow_managed_demo=true only for an approved, time-boxed test."
     }
 
     precondition {
@@ -99,4 +105,12 @@ module "github_oidc" {
   github_repository = var.github_repository
   oidc_provider_arn = var.github_actions_oidc_provider_arn
   tags              = local.common_tags
+}
+
+module "async_results" {
+  count  = local.async_results_enabled ? 1 : 0
+  source = "./modules/async-results"
+
+  name_prefix = "arthurs-trials-${var.deployment_mode}"
+  tags        = local.common_tags
 }

@@ -51,6 +51,12 @@ variable "enable_github_actions_oidc" {
   default     = false
 }
 
+variable "enable_async_results" {
+  description = "Opt in to the SQS match-results and dead-letter queues only during an approved managed demo."
+  type        = bool
+  default     = false
+}
+
 variable "github_repository" {
   description = "GitHub repository allowed in the future OIDC trust policy."
   type        = string
