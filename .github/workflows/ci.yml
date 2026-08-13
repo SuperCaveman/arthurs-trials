@@ -50,6 +50,9 @@ jobs:
       - name: Verify local virtual-production asset workflow
         run: node scripts/Test-VirtualProductionAssetFlow.mjs
 
+      - name: Verify virtual-production workflow dashboard
+        run: node scripts/Test-VirtualProductionDashboard.mjs
+
       - name: Validate GameLift container template
         run: node scripts/Test-GameLiftContainerTemplate.mjs
 

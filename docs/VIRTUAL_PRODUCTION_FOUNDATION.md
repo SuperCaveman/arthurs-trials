@@ -34,3 +34,17 @@ node ./scripts/Run-VirtualProductionAssetFlow.mjs `
 This is intentionally a local contract first. Terraform and AWS integration
 remain default-off until the virtual-production workflow has the same clear
 cost, security, and teardown guardrails as the gaming workload.
+
+## Recording-friendly workflow view
+
+Turn any generated workflow JSON into a safe HTML dashboard:
+
+```powershell
+node ./scripts/Generate-VirtualProductionDashboard.mjs `
+  --workflow ./logs/virtual-production/Castle_Set_v12-<run>.json `
+  --output ./logs/virtual-production/Castle_Set_v12-dashboard.html
+```
+
+It is deliberately labelled as a local simulation. The screen is useful for a
+future VP portfolio clip because it makes the version, approval gate, local
+stage target, and AWS responsibility boundaries visible in one place.
