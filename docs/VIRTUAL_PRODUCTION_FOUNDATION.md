@@ -164,3 +164,8 @@ node ./scripts/Generate-VirtualProductionRecoveryDashboard.mjs `
 This is the recommended next VP portfolio capture. It clearly shows `v12` to
 `v11` rollback, retained newer content, the local-stage boundary, and the
 default-off security controls in one screen.
+
+For a future explicitly approved cloud test, follow the
+[managed-demo runbook](VIRTUAL_PRODUCTION_MANAGED_DEMO_RUNBOOK.md). It covers
+the exact opt-in plan boundary, required production isolation, teardown, and
+next-day cost verification. It does not authorize or perform a deployment.

@@ -87,6 +87,8 @@ After the gaming proof, the same platform begins a second, local-first
 [virtual-production workflow](docs/VIRTUAL_PRODUCTION_FOUNDATION.md): a remote
 artist version such as `Castle_Set_v12` moves through validation, approval, and
 local-stage deployment without moving latency-sensitive rendering into AWS.
+Its future default-off cloud test is bounded by a dedicated
+[managed-demo runbook](docs/VIRTUAL_PRODUCTION_MANAGED_DEMO_RUNBOOK.md).
 
 The local retry and poison-message handling proof is documented in the
 [results-worker resilience guide](docs/RESULTS_WORKER_RESILIENCE.md). It
