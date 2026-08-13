@@ -8,6 +8,15 @@ Amazon GameLift Servers is the distinctive hosting layer, but it is only one par
 
 The project starts with local multiplayer and an Amazon GameLift Servers Anywhere fleet, then supports a short, deliberately time-boxed managed-cloud demonstration. It is designed so that the public portfolio shows real integrations and operational judgment without paying to keep a fleet running.
 
+## Unified platform architecture
+
+![Unified gaming and virtual-production platform architecture](docs/assets/unreal-cloud-platform-architecture.svg)
+
+The visual separates real local evidence from the validated, default-off AWS
+design. It is explicit that AWS supports virtual-production workflow around a
+local stage rather than the latency-sensitive stage render itself. See the
+[architecture guide](docs/ARCHITECTURE.md).
+
 ## What this should prove
 
 - Unreal dedicated-server integration with the GameLift Servers Server SDK lifecycle.
@@ -19,6 +28,9 @@ The project starts with local multiplayer and an Amazon GameLift Servers Anywher
 - Operational readiness: structured logs, dashboards, CloudWatch-to-SNS alarms, a runbook, graceful shutdown, and controlled failure tests.
 - A defensible scale path from a local four-player match to regional, multi-region hosting.
 - Practical FinOps: every resource is tagged, managed capacity is opt-in, and teardown is part of the demo.
+- A reusable Unreal workflow platform: versioned virtual-production assets,
+  role-gated approval, stage delivery, recovery, and audit status without a
+  persistent GPU fleet.
 
 ## Portfolio claim
 
