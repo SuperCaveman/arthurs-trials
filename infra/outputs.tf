@@ -76,3 +76,8 @@ output "virtual_production_approval_table_name" {
   description = "Optional stage-approval metadata table name; null in local mode."
   value       = local.virtual_production_assets_enabled ? module.virtual_production_assets[0].approval_table_name : null
 }
+
+output "virtual_production_stage_read_role_arn" {
+  description = "Optional least-privilege role the local stage would assume to retrieve approved assets; null in local mode."
+  value       = local.virtual_production_assets_enabled ? module.virtual_production_assets[0].stage_read_role_arn : null
+}

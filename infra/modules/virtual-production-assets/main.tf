@@ -87,3 +87,62 @@ resource "aws_dynamodb_table" "stage_approvals" {
     role = "virtual-production-stage-approval-metadata"
   })
 }
+
+# The local stage never receives write access. An organization-specific
+# workstation/federated identity must be named explicitly by the root module
+# before this role can be created.
+data "aws_iam_policy_document" "stage_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "AWS"
+      identifiers = [var.stage_trusted_principal_arn]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "stage_asset_read" {
+  statement {
+    sid       = "ListOnlyThisProductionAssetBucket"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.asset_versions.arn]
+  }
+
+  statement {
+    sid    = "ReadVersionedApprovedAssetObjects"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionTagging",
+    ]
+    resources = ["${aws_s3_bucket.asset_versions.arn}/approved/*"]
+  }
+
+  statement {
+    sid       = "ReadApprovalForAssignedStage"
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem"]
+    resources = [aws_dynamodb_table.stage_approvals.arn]
+  }
+}
+
+resource "aws_iam_role" "stage_asset_read" {
+  name               = "${var.name_prefix}-vp-stage-read"
+  assume_role_policy = data.aws_iam_policy_document.stage_assume_role.json
+
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-vp-stage-read"
+    role = "virtual-production-stage-asset-read"
+  })
+}
+
+resource "aws_iam_role_policy" "stage_asset_read" {
+  name   = "${var.name_prefix}-vp-stage-approved-asset-read"
+  role   = aws_iam_role.stage_asset_read.id
+  policy = data.aws_iam_policy_document.stage_asset_read.json
+}

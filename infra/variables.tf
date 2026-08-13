@@ -98,6 +98,12 @@ variable "enable_virtual_production_assets" {
   default     = false
 }
 
+variable "virtual_production_stage_trusted_principal_arn" {
+  description = "Existing IAM role ARN permitted to assume the future read-only local-stage asset role; required only when virtual-production assets are enabled."
+  type        = string
+  default     = ""
+}
+
 variable "observability_alarm_actions" {
   description = "Existing alarm action ARNs (for example, an approved SNS topic). Empty creates no notification service."
   type        = list(string)

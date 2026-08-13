@@ -108,6 +108,11 @@ resource "terraform_data" "managed_demo_gate" {
     }
 
     precondition {
+      condition     = !var.enable_virtual_production_assets || trimspace(var.virtual_production_stage_trusted_principal_arn) != ""
+      error_message = "virtual_production_stage_trusted_principal_arn is required when enable_virtual_production_assets=true; the stage must use an explicit trusted identity."
+    }
+
+    precondition {
       condition     = !var.enable_github_actions_oidc || trimspace(var.github_actions_oidc_provider_arn) != ""
       error_message = "github_actions_oidc_provider_arn is required when enable_github_actions_oidc=true."
     }
@@ -229,6 +234,7 @@ module "virtual_production_assets" {
   count  = local.virtual_production_assets_enabled ? 1 : 0
   source = "./modules/virtual-production-assets"
 
-  name_prefix = "arthurs-trials-${var.deployment_mode}"
-  tags        = local.common_tags
+  name_prefix                 = "arthurs-trials-${var.deployment_mode}"
+  stage_trusted_principal_arn = var.virtual_production_stage_trusted_principal_arn
+  tags                        = local.common_tags
 }

@@ -21,5 +21,12 @@ assert.match(module, /noncurrent_version_transition[\s\S]*?noncurrent_days\s+=\s
 assert.match(module, /resource "aws_dynamodb_table" "stage_approvals"/);
 assert.match(module, /billing_mode\s+=\s+"PAY_PER_REQUEST"/);
 assert.match(module, /point_in_time_recovery[\s\S]*?enabled\s+=\s+true/);
+assert.match(module, /resource "aws_iam_role" "stage_asset_read"/);
+assert.match(module, /resource "aws_iam_role_policy" "stage_asset_read"/);
+assert.match(module, /"s3:GetObjectVersion"/);
+assert.match(module, /\$\{aws_s3_bucket\.asset_versions\.arn\}\/approved\/\*/);
+assert.match(module, /"dynamodb:GetItem"/);
+assert.doesNotMatch(module, /"s3:PutObject"|"dynamodb:PutItem"/);
+assert.match(main, /virtual_production_stage_trusted_principal_arn is required/);
 
-console.log('Verified: virtual-production storage is private, versioned, recoverable, approval-tracked, and default-off.');
+console.log('Verified: virtual-production storage is private, versioned, recoverable, approval-tracked, stage-read-only, and default-off.');

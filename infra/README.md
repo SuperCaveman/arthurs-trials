@@ -67,9 +67,11 @@ notification service; pass an approved pre-existing action ARN only when a
 real operator will receive it. See the [observability foundation](../docs/OBSERVABILITY_FOUNDATION.md).
 
 Set `enable_virtual_production_assets=true` only for an approved virtual-
-production demo window. That optional slice creates a private versioned S3
-asset bucket and on-demand DynamoDB stage-approval metadata table. It creates
-no GPU/render host, NAT gateway, or always-on service. See the
+production demo window, with an existing
+`virtual_production_stage_trusted_principal_arn`. That optional slice creates a
+private versioned S3 asset bucket, on-demand DynamoDB stage-approval metadata
+table, and a read-only approved-asset role assumable only by that named
+identity. It creates no GPU/render host, NAT gateway, or always-on service. See the
 [virtual-production foundation](../docs/VIRTUAL_PRODUCTION_FOUNDATION.md) for
 the local-stage boundary, archive/recovery behavior, and teardown considerations.
 
