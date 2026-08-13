@@ -1,0 +1,11 @@
+{
+  "Name": "arthurs-trials-scale-in-sustained-idle-capacity",
+  "FleetId": "REPLACE_WITH_MANAGED_CONTAINER_FLEET_ID",
+  "PolicyType": "RuleBased",
+  "MetricName": "PercentAvailableGameSessions",
+  "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+  "Threshold": 60,
+  "EvaluationPeriods": 15,
+  "ScalingAdjustment": -1,
+  "ScalingAdjustmentType": "ChangeInCapacity"
+}

@@ -43,6 +43,11 @@ The planned two-to-four player matchmaking policy is a versioned, locally
 validated [FlexMatch rule-set template](docs/FLEXMATCH_DESIGN.md); it is not a
 deployed matchmaker.
 
+The managed-hosting plan also includes a placeholder-safe, locally validated
+[GameLift placement and capacity design](docs/GAMELIFT_CAPACITY_PLACEMENT.md):
+latency-aware queue placement, revisioned fleet aliases, and conservative
+available-session scaling policies. It is not a deployed managed fleet.
+
 The local, idempotent proof for the future asynchronous reward path is in the
 [match-results contract](docs/MATCH_RESULTS_CONTRACT.md).
 

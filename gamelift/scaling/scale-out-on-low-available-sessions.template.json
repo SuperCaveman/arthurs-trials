@@ -1,0 +1,11 @@
+{
+  "Name": "arthurs-trials-scale-out-low-available-sessions",
+  "FleetId": "REPLACE_WITH_MANAGED_CONTAINER_FLEET_ID",
+  "PolicyType": "RuleBased",
+  "MetricName": "PercentAvailableGameSessions",
+  "ComparisonOperator": "LessThanOrEqualToThreshold",
+  "Threshold": 25,
+  "EvaluationPeriods": 3,
+  "ScalingAdjustment": 1,
+  "ScalingAdjustmentType": "ChangeInCapacity"
+}

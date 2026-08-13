@@ -48,6 +48,9 @@ jobs:
       - name: Validate FlexMatch rule-set template
         run: node scripts/Test-FlexMatchRuleSet.mjs
 
+      - name: Validate GameLift capacity and placement templates
+        run: node scripts/Test-GameLiftCapacityTemplates.mjs
+
       - name: Validate authoritative match-results contract
         run: node scripts/Test-AuthoritativeMatchResultsContract.mjs
 
