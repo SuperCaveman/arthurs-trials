@@ -1,0 +1,15 @@
+{
+  "production": "arthurs-trials-demo",
+  "assetName": "Castle_Set",
+  "version": 12,
+  "source": {
+    "artistWorkstation": "remote-unreal-artist-demo",
+    "unrealEngine": "5.8",
+    "package": "Castle_Set_v12.umap"
+  },
+  "stageTarget": "local-stage-workstation-demo",
+  "checks": {
+    "requiredFiles": ["Castle_Set_v12.umap", "Castle_Set_v12_AssetRegistry.bin"],
+    "estimatedBytes": 52428800
+  }
+}

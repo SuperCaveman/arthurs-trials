@@ -68,6 +68,11 @@ The bounded local control-plane load evidence is documented in the
 [placement simulation guide](docs/LOCAL_PLACEMENT_SIMULATION.md). It creates
 explicitly scoped CSV/JSON/SVG artifacts without calling AWS.
 
+After the gaming proof, the same platform begins a second, local-first
+[virtual-production workflow](docs/VIRTUAL_PRODUCTION_FOUNDATION.md): a remote
+artist version such as `Castle_Set_v12` moves through validation, approval, and
+local-stage deployment without moving latency-sensitive rendering into AWS.
+
 The local retry and poison-message handling proof is documented in the
 [results-worker resilience guide](docs/RESULTS_WORKER_RESILIENCE.md). It
 exercises the worker's SQS decision path without creating a queue.

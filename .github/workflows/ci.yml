@@ -47,6 +47,9 @@ jobs:
       - name: Verify bounded local placement simulation
         run: node scripts/Test-PlacementLoadSimulation.mjs
 
+      - name: Verify local virtual-production asset workflow
+        run: node scripts/Test-VirtualProductionAssetFlow.mjs
+
       - name: Validate GameLift container template
         run: node scripts/Test-GameLiftContainerTemplate.mjs
 
