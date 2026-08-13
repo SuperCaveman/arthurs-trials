@@ -95,6 +95,34 @@ The Anywhere adapter invokes the AWS CLI from the API process; the Unreal
 client never receives AWS credentials. This is the local stand-in for the
 future ECS task role and AWS SDK implementation.
 
+## Managed GameLift queue adapter (template only)
+
+`queue` is a separate, opt-in adapter for the managed hosting design. It calls
+`StartGameSessionPlacement`, polls the placement status, and returns **only the
+calling player's** reservation from GameLift's fulfilled placement. It does not
+call `CreatePlayerSession` after placement because the queue request already
+creates reservations for the party.
+
+This adapter is unit-tested with a local mock; no queue exists and no AWS call
+is made unless you explicitly start the API in this mode. A future approved
+managed run needs a real queue, task role, egress path, Cognito configuration,
+and measured latency for every party member:
+
+```powershell
+$env:GAME_LIFT_ADAPTER = 'queue'
+$env:AWS_REGION = 'us-east-1'
+$env:GAME_LIFT_QUEUE_NAME = 'arthurs-trials-demo-queue'
+$env:SESSION_API_AUTH_MODE = 'cognito'
+npm start
+```
+
+The placement request body must include a complete `latencies` map, in
+milliseconds, for every party member. It is converted to the GameLift
+`PlayerLatencies` shape using the requested region. Real clients should obtain
+those values from GameLift UDP ping beacons, not ICMP. See the [queue/capacity
+design](../docs/GAMELIFT_CAPACITY_PLACEMENT.md). Never put queue/fleet details,
+access tokens, or player-session IDs in recordings.
+
 With the API and local server running, use the repeatable end-to-end client
 check from the repository root:
 

@@ -47,7 +47,10 @@ Request:
 {
   "mode": "co-op-defense",
   "region": "us-east-1",
-  "party": ["player-123"]
+  "party": ["player-123"],
+  "latencies": {
+    "player-123": 42
+  }
 }
 ```
 
@@ -60,6 +63,10 @@ Rules:
   returns the original placement rather than creating extra player sessions.
 - The first implementation targets one region and four-player co-op. Region
   selection and FlexMatch are intentionally deferred.
+- `latencies` is optional for the local fake and direct Anywhere adapters. The
+  managed queue adapter requires one integer millisecond measurement for every
+  player in the party and maps it to GameLift `PlayerLatencies`. Production
+  values come from UDP ping beacons rather than ICMP ping.
 
 Accepted response while placement is pending:
 
@@ -114,8 +121,11 @@ records a cancellation reason for support and metrics.
 
 The local API now exposes the client-facing boundary. It defaults to a fake
 adapter for unit and HTTP-contract tests, and its `anywhere` adapter invokes
-the AWS CLI only from the API process. The existing scripts remain the local
-operator tools for starting and stopping the server process:
+the AWS CLI only from the API process. A separately tested `queue` adapter
+uses `StartGameSessionPlacement`, waits for a fulfilled placement, and returns
+the caller's already-created GameLift player-session reservation. The existing
+scripts remain the local operator tools for starting and stopping the server
+process:
 
 | Planned API responsibility | Local helper |
 | --- | --- |
@@ -133,3 +143,7 @@ to retain match ownership/idempotency across one API restart. It is explicitly
 single-process development persistence, not a database. No live user pool or
 sign-in has been tested, so Cognito integration, transactional RDS persistence,
 and an ECS task role remain managed-demo work.
+
+The queue adapter has no live queue proof yet. It is source- and mock-tested
+only, and must not be described as deployed until an approved managed demo
+shows placement, a player admission, a timeout/failure, and a cleanup.

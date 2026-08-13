@@ -6,7 +6,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createFileMatchStore } from '../src/match-store.mjs';
-import { createCognitoJwtAuthenticator, createSessionApi } from '../src/server.mjs';
+import { createCognitoJwtAuthenticator, createQueueGameLiftAdapter, createSessionApi } from '../src/server.mjs';
 
 async function startApi({ authenticate, store, createMatch } = {}) {
   let calls = 0;
@@ -91,6 +91,91 @@ test('creates a ready match and reuses it for the same idempotency key', async (
     party: ['andrew'],
     xpAward: 125,
   });
+});
+
+test('passes complete measured party latency to an adapter when supplied', async (t) => {
+  const api = await startApi();
+  t.after(api.close);
+  const response = await fetch(`${api.baseUrl}/v1/matches`, {
+    method: 'POST',
+    headers: requestHeaders('andrew', 'b60ab1a5-5294-4b90-a5be-df1c2fdcac7c'),
+    body: JSON.stringify({
+      mode: 'co-op-defense',
+      region: 'us-east-1',
+      party: ['andrew', 'arthur'],
+      latencies: { andrew: 31, arthur: 47 },
+    }),
+  });
+
+  assert.equal(response.status, 201);
+  assert.deepEqual(api.lastCreateMatchRequest().playerLatencies, [
+    { PlayerId: 'andrew', RegionIdentifier: 'us-east-1', LatencyInMilliseconds: 31 },
+    { PlayerId: 'arthur', RegionIdentifier: 'us-east-1', LatencyInMilliseconds: 47 },
+  ]);
+});
+
+test('rejects partial or implausible latency data before placement', async (t) => {
+  const api = await startApi();
+  t.after(api.close);
+  const response = await fetch(`${api.baseUrl}/v1/matches`, {
+    method: 'POST',
+    headers: requestHeaders('andrew', '0c7fd0c5-a4bc-4ee6-93f4-63da52065b28'),
+    body: JSON.stringify({
+      mode: 'co-op-defense',
+      region: 'us-east-1',
+      party: ['andrew', 'arthur'],
+      latencies: { andrew: 0 },
+    }),
+  });
+
+  assert.equal(response.status, 400);
+  assert.equal(api.calls(), 0);
+});
+
+test('queue adapter creates one latency-aware placement and returns only the caller reservation', async () => {
+  const calls = [];
+  let describeCount = 0;
+  const adapter = createQueueGameLiftAdapter({ AWS_REGION: 'us-east-1', GAME_LIFT_QUEUE_NAME: 'arthurs-trials-demo-queue' }, {
+    async awsJsonFn(args) {
+      calls.push(args);
+      if (args[1] === 'start-game-session-placement') return { GameSessionPlacement: { Status: 'PENDING' } };
+      describeCount += 1;
+      return {
+        GameSessionPlacement: describeCount === 1
+          ? { Status: 'PENDING' }
+          : {
+            Status: 'FULFILLED',
+            IpAddress: '203.0.113.10',
+            Port: 7777,
+            PlacedPlayerSessions: [
+              { PlayerId: 'andrew', PlayerSessionId: 'psess_andrew' },
+              { PlayerId: 'arthur', PlayerSessionId: 'psess_arthur' },
+            ],
+          },
+      };
+    },
+    sleepFn: async () => {},
+  });
+
+  const connection = await adapter.createMatch({
+    playerId: 'andrew',
+    maximumPlayerSessions: 4,
+    matchRequestId: 'mrq_2b989bf7-8040-418c-b311-00d5bbc71d61',
+    party: ['andrew', 'arthur'],
+    xpAward: 125,
+    playerLatencies: [
+      { PlayerId: 'andrew', RegionIdentifier: 'us-east-1', LatencyInMilliseconds: 31 },
+      { PlayerId: 'arthur', RegionIdentifier: 'us-east-1', LatencyInMilliseconds: 47 },
+    ],
+  });
+
+  assert.deepEqual({ address: connection.address, port: connection.port, playerSessionId: connection.playerSessionId }, {
+    address: '203.0.113.10', port: 7777, playerSessionId: 'psess_andrew',
+  });
+  assert.equal(calls[0][1], 'start-game-session-placement');
+  assert.ok(calls[0].includes('--desired-player-sessions'));
+  assert.ok(calls[0].includes('PlayerId=andrew,RegionIdentifier=us-east-1,LatencyInMilliseconds=31'));
+  assert.equal(calls.filter((args) => args[1] === 'describe-game-session-placement').length, 2);
 });
 
 test('exposes an unauthenticated health endpoint without match data', async (t) => {

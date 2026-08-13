@@ -33,6 +33,9 @@ jobs:
       - name: Validate player-safe capacity exhaustion contract
         run: node scripts/Test-SessionCapacityContract.mjs
 
+      - name: Validate GameLift queue-placement API contract
+        run: node scripts/Test-GameLiftQueueAdapterContract.mjs
+
       - name: Exercise the local API benchmark
         run: node scripts/Run-SessionApiLoadTest.mjs
 

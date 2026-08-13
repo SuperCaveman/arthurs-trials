@@ -10,6 +10,7 @@ const MAX_BODY_BYTES = 16 * 1024;
 const MAX_PARTY_SIZE = 4;
 const LOCAL_TOKEN_PATTERN = /^Bearer local-dev-([A-Za-z0-9._-]{3,64})$/;
 const GAME_SESSION_READY_TIMEOUT_MS = 20_000;
+const GAME_SESSION_PLACEMENT_TIMEOUT_MS = 20_000;
 const COGNITO_JWKS_CACHE_MS = 5 * 60 * 1_000;
 const COGNITO_JWKS_TIMEOUT_MS = 3_000;
 
@@ -212,6 +213,26 @@ function validateMatchRequest(body, principal) {
     error.statusCode = 403;
     throw error;
   }
+
+  if (body.latencies === undefined) return undefined;
+  if (body.latencies === null || Array.isArray(body.latencies) || typeof body.latencies !== 'object') {
+    const error = new Error('latencies must map every party player to an integer latency in milliseconds.');
+    error.statusCode = 400;
+    throw error;
+  }
+  const partyIds = [...body.party].sort();
+  const latencyIds = Object.keys(body.latencies).sort();
+  if (JSON.stringify(partyIds) !== JSON.stringify(latencyIds)
+    || !latencyIds.every((playerId) => Number.isInteger(body.latencies[playerId]) && body.latencies[playerId] >= 1 && body.latencies[playerId] <= 1000)) {
+    const error = new Error('latencies must map every party player to an integer latency in milliseconds.');
+    error.statusCode = 400;
+    throw error;
+  }
+  return body.party.map((playerId) => ({
+    PlayerId: playerId,
+    RegionIdentifier: body.region,
+    LatencyInMilliseconds: body.latencies[playerId],
+  }));
 }
 
 export function createFakeGameLiftAdapter() {
@@ -232,7 +253,7 @@ export function createFakeGameLiftAdapter() {
 function requiredEnvironment(name, environment) {
   const value = environment[name];
   if (!value) {
-    throw new Error(`${name} is required when GAME_LIFT_ADAPTER=anywhere.`);
+    throw new Error(`${name} is required when a GameLift adapter is selected.`);
   }
   return value;
 }
@@ -315,6 +336,78 @@ export function createAnywhereGameLiftAdapter(environment = process.env) {
   };
 }
 
+async function waitForFulfilledPlacement({ placementId, region, awsJsonFn, sleepFn, timeoutMilliseconds }) {
+  const deadline = Date.now() + timeoutMilliseconds;
+  while (Date.now() < deadline) {
+    const placement = (await awsJsonFn([
+      'gamelift', 'describe-game-session-placement',
+      '--region', region,
+      '--placement-id', placementId,
+      '--output', 'json',
+    ])).GameSessionPlacement;
+    if (placement?.Status === 'FULFILLED') return placement;
+    if (['FAILED', 'TIMED_OUT', 'CANCELLED'].includes(placement?.Status)) throw capacityUnavailable();
+    await sleepFn(1_000);
+  }
+  throw capacityUnavailable();
+}
+
+// This is the managed-hosting adapter. It is intentionally distinct from the
+// direct Anywhere proof: GameLift creates all party reservations during a
+// queue placement and the API returns only the caller's reservation.
+export function createQueueGameLiftAdapter(environment = process.env, {
+  awsJsonFn = awsJson,
+  sleepFn = sleep,
+  timeoutMilliseconds = GAME_SESSION_PLACEMENT_TIMEOUT_MS,
+} = {}) {
+  const region = requiredEnvironment('AWS_REGION', environment);
+  const queueName = requiredEnvironment('GAME_LIFT_QUEUE_NAME', environment);
+
+  return {
+    async createMatch({ playerId, maximumPlayerSessions, matchRequestId, party, xpAward, playerLatencies }) {
+      if (!Array.isArray(playerLatencies) || playerLatencies.length !== party.length) {
+        throw new Error('Measured latency is required for every party player when GAME_LIFT_ADAPTER=queue.');
+      }
+      const placementId = randomUUID();
+      await awsJsonFn([
+        'gamelift', 'start-game-session-placement',
+        '--region', region,
+        '--placement-id', placementId,
+        '--game-session-queue-name', queueName,
+        '--game-session-name', `match-${placementId}`,
+        '--maximum-player-session-count', String(maximumPlayerSessions),
+        '--desired-player-sessions', ...party.map((id) => `PlayerId=${id}`),
+        '--player-latencies', ...playerLatencies.map((latency) => (
+          `PlayerId=${latency.PlayerId},RegionIdentifier=${latency.RegionIdentifier},LatencyInMilliseconds=${latency.LatencyInMilliseconds}`
+        )),
+        '--game-properties',
+        `Key=matchId,Value=${matchRequestId}`,
+        `Key=participants,Value=${party.join(',')}`,
+        `Key=xpAward,Value=${xpAward}`,
+        '--output', 'json',
+      ]);
+
+      const placement = await waitForFulfilledPlacement({
+        placementId,
+        region,
+        awsJsonFn,
+        sleepFn,
+        timeoutMilliseconds,
+      });
+      const reservation = placement.PlacedPlayerSessions?.find((session) => session.PlayerId === playerId);
+      if (!reservation?.PlayerSessionId || !(placement.IpAddress ?? placement.DnsName) || !placement.Port) {
+        throw new Error('Fulfilled GameLift placement did not return caller connection details.');
+      }
+      return {
+        address: placement.IpAddress ?? placement.DnsName,
+        port: placement.Port,
+        playerSessionId: reservation.PlayerSessionId,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      };
+    },
+  };
+}
+
 export function createSessionApi({
   adapter = createFakeGameLiftAdapter(),
   authenticate = createLocalAuthenticator(),
@@ -345,15 +438,17 @@ export function createSessionApi({
         }
 
         const body = await readJson(request);
-        validateMatchRequest(body, principal);
+        const playerLatencies = validateMatchRequest(body, principal);
         const matchRequestId = `mrq_${randomUUID()}`;
-        const connection = await adapter.createMatch({
+        const matchInput = {
           playerId: principal.id,
           maximumPlayerSessions: MAX_PARTY_SIZE,
           matchRequestId,
           party: body.party,
           xpAward: 125,
-        });
+        };
+        if (playerLatencies) matchInput.playerLatencies = playerLatencies;
+        const connection = await adapter.createMatch(matchInput);
         const match = {
           matchRequestId,
           status: 'READY',
@@ -406,8 +501,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const storeName = process.env.SESSION_API_STORE ?? 'memory';
   const adapter = adapterName === 'anywhere'
     ? createAnywhereGameLiftAdapter()
-    : createFakeGameLiftAdapter();
-  if (!['fake', 'anywhere'].includes(adapterName)) throw new Error('GAME_LIFT_ADAPTER must be fake or anywhere.');
+    : adapterName === 'queue'
+      ? createQueueGameLiftAdapter()
+      : createFakeGameLiftAdapter();
+  if (!['fake', 'anywhere', 'queue'].includes(adapterName)) throw new Error('GAME_LIFT_ADAPTER must be fake, anywhere, or queue.');
   if (!['memory', 'file'].includes(storeName)) throw new Error('SESSION_API_STORE must be memory or file.');
   const authenticate = authMode === 'cognito'
     ? createCognitoJwtAuthenticator({
