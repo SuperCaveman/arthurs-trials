@@ -75,6 +75,9 @@ jobs:
       - name: Validate observability Terraform contract
         run: node scripts/Test-ObservabilityTerraformContract.mjs
 
+      - name: Validate release-candidate workflow boundary
+        run: node scripts/Test-ReleaseCandidateWorkflow.mjs
+
       - name: Build session API container
         working-directory: api
         run: docker build --tag arthurs-trials-session-api:ci .

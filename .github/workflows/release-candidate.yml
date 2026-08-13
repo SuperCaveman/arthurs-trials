@@ -1,0 +1,62 @@
+name: Build release candidate (no deploy)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_label:
+        description: Optional human-readable label for the evidence artifact.
+        required: false
+        default: manual
+        type: string
+
+# This job intentionally has no id-token permission, AWS credential setup,
+# registry login, or deployment capability. It is evidence generation only.
+permissions:
+  contents: read
+
+jobs:
+  build-evidence:
+    name: Build immutable local artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test session API
+        working-directory: api
+        run: npm test
+
+      - name: Test results worker
+        working-directory: worker
+        run: |
+          npm ci
+          npm test
+
+      - name: Build session API candidate image
+        run: docker build --tag arthurs-trials-session-api:release-candidate-${{ github.sha }} api
+
+      - name: Build results-worker candidate image
+        run: docker build --tag arthurs-trials-results-worker:release-candidate-${{ github.sha }} worker
+
+      - name: Create release evidence manifest
+        env:
+          RELEASE_LABEL: ${{ inputs.release_label }}
+          SOURCE_REVISION: ${{ github.sha }}
+        run: |
+          node scripts/Generate-ReleaseCandidateManifest.mjs \
+            --output release-evidence/release-candidate.json \
+            arthurs-trials-session-api:release-candidate-${{ github.sha }} \
+            arthurs-trials-results-worker:release-candidate-${{ github.sha }}
+
+      - name: Upload release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: arthurs-trials-release-candidate-${{ github.sha }}
+          path: release-evidence/release-candidate.json
+          retention-days: 14

@@ -27,6 +27,10 @@ Unreal client yet, and it does not give GitHub permission to deploy.
 - The OIDC role has no permissions on purpose. Future resource modules must
   attach narrowly scoped policies alongside the resources they operate, rather
   than turning a reusable CI role into a broad administrator role.
+- The manual release-candidate workflow is deliberately separate from OIDC. It
+  builds and hashes local container archives but has no `id-token` permission,
+  AWS configuration, registry login, or deploy step. This proves delivery
+  discipline without turning evidence generation into cloud access.
 - Authentication logs must never contain JWTs, player-session IDs, or email
   addresses. The local dashboard sanitization test remains part of CI.
 
