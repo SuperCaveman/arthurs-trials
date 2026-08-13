@@ -12,3 +12,8 @@ output "master_user_secret_arn" {
   description = "RDS-managed master credential secret ARN."
   value       = aws_db_instance.postgres.master_user_secret[0].secret_arn
 }
+
+output "instance_identifier" {
+  description = "RDS instance identifier for CloudWatch metric dimensions."
+  value       = aws_db_instance.postgres.identifier
+}

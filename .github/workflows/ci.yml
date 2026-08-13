@@ -72,6 +72,9 @@ jobs:
       - name: Validate results-worker managed runtime template
         run: node scripts/Test-ResultsWorkerRuntimeContract.mjs
 
+      - name: Validate observability Terraform contract
+        run: node scripts/Test-ObservabilityTerraformContract.mjs
+
       - name: Build session API container
         working-directory: api
         run: docker build --tag arthurs-trials-session-api:ci .

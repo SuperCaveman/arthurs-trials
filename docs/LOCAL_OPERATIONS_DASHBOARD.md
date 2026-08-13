@@ -37,7 +37,10 @@ session IDs, player-session IDs, auth tokens, or command lines.
 
 During an explicitly approved managed demo, the same event names and lifecycle
 dimensions become structured application logs and CloudWatch dashboard/alarm
-inputs. The planned dashboard covers GameLift capacity and health, placement
-wait/failure, API latency and errors, ECS health, result-worker failures, SQS
-age, DLQ depth, RDS health, and an SNS operator alert. Those resources remain
-disabled to preserve the project's low-cost default.
+inputs. The default-off Terraform template now covers result-queue age, DLQ
+depth, ECS worker CPU/memory, and RDS free storage. It deliberately creates no
+notification service: alarm actions stay empty until an approved existing
+operator destination is provided. GameLift capacity/health, placement
+wait/failure, API latency, and structured worker-failure signals remain the
+next observability expansion. Those resources remain disabled to preserve the
+project's low-cost default.

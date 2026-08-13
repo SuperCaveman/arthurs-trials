@@ -6,6 +6,7 @@ locals {
   async_results_enabled  = local.managed_demo_enabled && var.enable_async_results
   database_enabled       = local.managed_demo_enabled && var.enable_database
   results_worker_enabled = local.managed_demo_enabled && var.enable_results_worker_runtime
+  observability_enabled  = local.managed_demo_enabled && var.enable_observability
 
   common_tags = {
     project        = "arthurs-trials"
@@ -37,7 +38,7 @@ provider "aws" {
 # preconditions deliberately make "terraform plan -var deployment_mode=demo"
 # fail unless the operator supplies a real expiration and explicit consent.
 resource "terraform_data" "managed_demo_gate" {
-  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc || var.enable_async_results || var.enable_database || var.enable_results_worker_runtime ? 1 : 0
+  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc || var.enable_async_results || var.enable_database || var.enable_results_worker_runtime || var.enable_observability ? 1 : 0
 
   input = {
     region     = var.aws_region
@@ -88,6 +89,16 @@ resource "terraform_data" "managed_demo_gate" {
     precondition {
       condition     = !var.enable_results_worker_runtime || trimspace(var.results_worker_image_uri) != ""
       error_message = "results_worker_image_uri is required when enable_results_worker_runtime=true."
+    }
+
+    precondition {
+      condition     = !var.enable_observability || local.managed_demo_enabled
+      error_message = "Observability is blocked in local mode. Use deployment_mode=demo and allow_managed_demo=true only for an approved, time-boxed test."
+    }
+
+    precondition {
+      condition     = !var.enable_observability || local.results_worker_enabled
+      error_message = "Observability requires enable_results_worker_runtime=true so it has real queue, worker, and database targets."
     }
 
     precondition {
@@ -185,4 +196,21 @@ module "results_worker_runtime" {
   worker_image_uri        = var.results_worker_image_uri
   desired_count           = var.results_worker_desired_count
   tags                    = local.common_tags
+}
+
+# Dashboard and alarms are optional operational evidence. Empty alarm actions
+# deliberately avoid creating a notification service; an approved operator may
+# supply an existing SNS/PagerDuty action ARN later.
+module "observability" {
+  count  = local.observability_enabled ? 1 : 0
+  source = "./modules/observability"
+
+  name_prefix              = "arthurs-trials-${var.deployment_mode}"
+  match_results_queue_name = module.async_results[0].queue_name
+  dead_letter_queue_name   = module.async_results[0].dead_letter_queue_name
+  cluster_name             = module.results_worker_access[0].cluster_name
+  service_name             = module.results_worker_runtime[0].service_name
+  database_identifier      = module.database[0].instance_identifier
+  alarm_actions            = var.observability_alarm_actions
+  tags                     = local.common_tags
 }

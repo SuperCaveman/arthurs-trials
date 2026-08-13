@@ -17,7 +17,13 @@ output "planned_resource_boundary" {
     local.async_results_enabled ? ["SQS match-results queue and dead-letter queue"] : [],
     local.database_enabled ? ["private encrypted PostgreSQL RDS instance"] : [],
     local.results_worker_enabled ? ["private ECS/Fargate results-worker service at desired count zero"] : [],
+    local.observability_enabled ? ["CloudWatch worker dashboard and five alarms"] : [],
   )
+}
+
+output "operations_dashboard_name" {
+  description = "Optional CloudWatch operations dashboard name; null in local mode."
+  value       = local.observability_enabled ? module.observability[0].dashboard_name : null
 }
 
 output "results_worker_service_name" {

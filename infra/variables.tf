@@ -86,6 +86,18 @@ variable "results_worker_desired_count" {
   }
 }
 
+variable "enable_observability" {
+  description = "Opt in to CloudWatch dashboard and alarms only during an approved managed demo with the results-worker runtime."
+  type        = bool
+  default     = false
+}
+
+variable "observability_alarm_actions" {
+  description = "Existing alarm action ARNs (for example, an approved SNS topic). Empty creates no notification service."
+  type        = list(string)
+  default     = []
+}
+
 variable "github_repository" {
   description = "GitHub repository allowed in the future OIDC trust policy."
   type        = string

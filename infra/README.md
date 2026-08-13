@@ -61,6 +61,11 @@ does **not** create NAT gateways or VPC endpoints; select and document one
 private-egress strategy before any approved task launch. See the
 [asynchronous-results foundation](../docs/ASYNC_RESULTS_FOUNDATION.md).
 
+Set `enable_observability=true` only with the worker runtime to add the native
+CloudWatch dashboard and five focused alarms. It creates no SNS topic or other
+notification service; pass an approved pre-existing action ARN only when a
+real operator will receive it. See the [observability foundation](../docs/OBSERVABILITY_FOUNDATION.md).
+
 See the [security and delivery foundation](../docs/SECURITY_DELIVERY_FOUNDATION.md)
 for the trust boundary, cost posture, and production-scale changes.
 
