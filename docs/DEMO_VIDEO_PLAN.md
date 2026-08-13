@@ -23,3 +23,17 @@ Two simultaneous visible clients are optional future footage, not a requirement
 for the first video. The current workstation has previously been unstable under
 heavier concurrent Unreal loads. A single visible client plus real API and
 GameLift lifecycle evidence is the safer, stronger first capture.
+
+## Unified platform end-card
+
+After the individual clips, generate a one-screen summary for the final
+end-card or a separate portfolio recording:
+
+```powershell
+node ./scripts/Generate-PlatformPortfolioDashboard.mjs `
+  --output ./logs/portfolio/platform-dashboard.html
+```
+
+It is a local static page. It explicitly labels verified local proof versus the
+default-off AWS design and contains no account, session, credential, or
+deployment identifiers.

@@ -44,6 +44,9 @@ jobs:
       - name: Validate portfolio documentation links
         run: node scripts/Test-DocumentationLinks.mjs
 
+      - name: Verify platform portfolio dashboard
+        run: node scripts/Test-PlatformPortfolioDashboard.mjs
+
       - name: Exercise the local API benchmark
         run: node scripts/Run-SessionApiLoadTest.mjs
 
