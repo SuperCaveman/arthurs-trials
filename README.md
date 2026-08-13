@@ -30,6 +30,11 @@ Only completed items will be represented as implemented. The scale design will b
 
 The detailed build order, acceptance criteria, cost guardrails, and platform capability matrix are in [the portfolio blueprint](docs/PORTFOLIO_BLUEPRINT.md).
 
+![Architecture: verified local proof and default-off managed design](docs/assets/arthurs-trials-architecture.svg)
+
+For an accessible explanation of the visual and its evidence boundary, see the
+[architecture guide](docs/ARCHITECTURE.md).
+
 For an honest, evidence-based view of what works today versus what remains a
 planned production design, see the [implementation status](docs/IMPLEMENTATION_STATUS.md).
 
