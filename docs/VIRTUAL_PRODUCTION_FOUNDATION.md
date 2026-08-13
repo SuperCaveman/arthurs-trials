@@ -31,9 +31,9 @@ node ./scripts/Run-VirtualProductionAssetFlow.mjs `
 | Stage retrieval | Least-privilege approved-version access | Keeps the local stage workstation on approved assets. |
 | Retention | S3 lifecycle/archive | Reduces cost while preserving rollback options. |
 
-This is intentionally a local contract first. Terraform and AWS integration
-remain default-off until the virtual-production workflow has the same clear
-cost, security, and teardown guardrails as the gaming workload.
+This is intentionally a local contract first. The separately optional Terraform
+slice below remains default-off; it has the same clear cost, security, and
+teardown guardrails as the gaming workload.
 
 ## Recording-friendly workflow view
 
@@ -65,3 +65,22 @@ node ./scripts/Run-VirtualProductionRollback.mjs `
 In the production architecture, S3 version history and an authenticated
 approval record preserve the same rollback boundary; lifecycle policy moves
 older content to lower-cost archive storage without erasing recovery history.
+
+## Default-off AWS storage and approval foundation
+
+The repository now contains a Terraform template for the future managed
+workflow. It is validated in CI but has not been applied, and the default
+`local` plan still creates **zero AWS resources**.
+
+| Component | Problem solved | Security and cost posture |
+| --- | --- | --- |
+| Private versioned S3 bucket | Recoverable Unreal environment packages and manifests | All public access is blocked; objects use S3-managed encryption; versioning preserves older assets. Noncurrent versions transition to S3 Glacier Instant Retrieval after 90 days but are not deleted by the template. |
+| DynamoDB approval metadata | Records which asset version is approved for which local stage target | On-demand billing avoids idle database capacity. Point-in-time recovery and server-side encryption preserve approval history. |
+| Local stage workstation | Keeps render latency off the network | Not an AWS resource. A future least-privilege integration retrieves a specifically approved version only. |
+
+The future managed plan requires the same explicit `deployment_mode=demo`,
+`allow_managed_demo=true`, and valid `expires_at` gate as every other cloud
+slice, plus `enable_virtual_production_assets=true`. It creates no GPU, render
+host, NAT gateway, or always-on application service. Do not apply it without a
+separate time-boxed budget and a teardown decision; S3 storage/version history
+and DynamoDB backup retention can accrue cost while retained.

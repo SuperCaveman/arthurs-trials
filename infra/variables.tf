@@ -92,6 +92,12 @@ variable "enable_observability" {
   default     = false
 }
 
+variable "enable_virtual_production_assets" {
+  description = "Opt in to the versioned virtual-production asset and approval-metadata foundation only during an approved managed demo."
+  type        = bool
+  default     = false
+}
+
 variable "observability_alarm_actions" {
   description = "Existing alarm action ARNs (for example, an approved SNS topic). Empty creates no notification service."
   type        = list(string)

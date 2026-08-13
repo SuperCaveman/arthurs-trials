@@ -56,6 +56,9 @@ jobs:
       - name: Verify virtual-production rollback workflow
         run: node scripts/Test-VirtualProductionRollback.mjs
 
+      - name: Validate virtual-production Terraform contract
+        run: node scripts/Test-VirtualProductionTerraformContract.mjs
+
       - name: Validate GameLift container template
         run: node scripts/Test-GameLiftContainerTemplate.mjs
 

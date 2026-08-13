@@ -1,12 +1,13 @@
 locals {
-  managed_demo_requested = var.deployment_mode == "demo"
-  managed_demo_enabled   = local.managed_demo_requested && var.allow_managed_demo
-  identity_enabled       = local.managed_demo_enabled && var.enable_identity
-  github_oidc_enabled    = local.managed_demo_enabled && var.enable_github_actions_oidc
-  async_results_enabled  = local.managed_demo_enabled && var.enable_async_results
-  database_enabled       = local.managed_demo_enabled && var.enable_database
-  results_worker_enabled = local.managed_demo_enabled && var.enable_results_worker_runtime
-  observability_enabled  = local.managed_demo_enabled && var.enable_observability
+  managed_demo_requested            = var.deployment_mode == "demo"
+  managed_demo_enabled              = local.managed_demo_requested && var.allow_managed_demo
+  identity_enabled                  = local.managed_demo_enabled && var.enable_identity
+  github_oidc_enabled               = local.managed_demo_enabled && var.enable_github_actions_oidc
+  async_results_enabled             = local.managed_demo_enabled && var.enable_async_results
+  database_enabled                  = local.managed_demo_enabled && var.enable_database
+  results_worker_enabled            = local.managed_demo_enabled && var.enable_results_worker_runtime
+  observability_enabled             = local.managed_demo_enabled && var.enable_observability
+  virtual_production_assets_enabled = local.managed_demo_enabled && var.enable_virtual_production_assets
 
   common_tags = {
     project        = "arthurs-trials"
@@ -38,7 +39,7 @@ provider "aws" {
 # preconditions deliberately make "terraform plan -var deployment_mode=demo"
 # fail unless the operator supplies a real expiration and explicit consent.
 resource "terraform_data" "managed_demo_gate" {
-  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc || var.enable_async_results || var.enable_database || var.enable_results_worker_runtime || var.enable_observability ? 1 : 0
+  count = local.managed_demo_requested || var.enable_identity || var.enable_github_actions_oidc || var.enable_async_results || var.enable_database || var.enable_results_worker_runtime || var.enable_observability || var.enable_virtual_production_assets ? 1 : 0
 
   input = {
     region     = var.aws_region
@@ -99,6 +100,11 @@ resource "terraform_data" "managed_demo_gate" {
     precondition {
       condition     = !var.enable_observability || local.results_worker_enabled
       error_message = "Observability requires enable_results_worker_runtime=true so it has real queue, worker, and database targets."
+    }
+
+    precondition {
+      condition     = !var.enable_virtual_production_assets || local.managed_demo_enabled
+      error_message = "Virtual-production assets are blocked in local mode. Use deployment_mode=demo and allow_managed_demo=true only for an approved, time-boxed test."
     }
 
     precondition {
@@ -213,4 +219,16 @@ module "observability" {
   database_identifier      = module.database[0].instance_identifier
   alarm_actions            = var.observability_alarm_actions
   tags                     = local.common_tags
+}
+
+# This optional slice preserves content versions and stage-approval metadata,
+# but creates no render workstation or always-on compute. The stage remains
+# local; it retrieves an explicitly approved version through a future
+# least-privilege integration.
+module "virtual_production_assets" {
+  count  = local.virtual_production_assets_enabled ? 1 : 0
+  source = "./modules/virtual-production-assets"
+
+  name_prefix = "arthurs-trials-${var.deployment_mode}"
+  tags        = local.common_tags
 }

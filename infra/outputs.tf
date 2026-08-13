@@ -18,6 +18,7 @@ output "planned_resource_boundary" {
     local.database_enabled ? ["private encrypted PostgreSQL RDS instance"] : [],
     local.results_worker_enabled ? ["private ECS/Fargate results-worker service at desired count zero"] : [],
     local.observability_enabled ? ["CloudWatch worker dashboard and five alarms"] : [],
+    local.virtual_production_assets_enabled ? ["versioned private S3 virtual-production asset bucket and on-demand approval metadata table"] : [],
   )
 }
 
@@ -64,4 +65,14 @@ output "postgres_endpoint" {
 output "postgres_master_user_secret_arn" {
   description = "Optional RDS-managed secret ARN; null in local mode."
   value       = local.database_enabled ? module.database[0].master_user_secret_arn : null
+}
+
+output "virtual_production_asset_bucket_name" {
+  description = "Optional private versioned asset bucket name; null in local mode."
+  value       = local.virtual_production_assets_enabled ? module.virtual_production_assets[0].asset_bucket_name : null
+}
+
+output "virtual_production_approval_table_name" {
+  description = "Optional stage-approval metadata table name; null in local mode."
+  value       = local.virtual_production_assets_enabled ? module.virtual_production_assets[0].approval_table_name : null
 }
