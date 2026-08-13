@@ -22,3 +22,8 @@ output "stage_read_role_arn" {
   description = "ARN of the least-privilege role used by the local stage to retrieve approved assets."
   value       = aws_iam_role.stage_asset_read.arn
 }
+
+output "asset_validation_state_machine_arn" {
+  description = "ARN of the serverless structural intake-validation workflow."
+  value       = aws_sfn_state_machine.asset_validation.arn
+}

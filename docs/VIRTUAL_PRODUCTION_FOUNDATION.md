@@ -77,6 +77,7 @@ workflow. It is validated in CI but has not been applied, and the default
 | Private versioned S3 bucket | Recoverable Unreal environment packages and manifests | All public access is blocked; objects use S3-managed encryption; versioning preserves older assets. Noncurrent versions transition to S3 Glacier Instant Retrieval after 90 days but are not deleted by the template. |
 | DynamoDB approval metadata | Records which asset version is approved for which local stage target | On-demand billing avoids idle database capacity. Point-in-time recovery and server-side encryption preserve approval history. |
 | Read-only stage role | Delivers a deliberate approved version to a local stage without granting write privileges | Its trust requires an explicit existing workstation/federated principal. Its policy permits only list/read operations for `approved/*` assets and `GetItem` on approval metadata; it cannot publish, delete, or alter approval state. |
+| Intake validation trigger | Starts safe, serverless handling when an artist upload arrives | S3 sends events to EventBridge; an EventBridge rule matches only `incoming/*` object-created events and starts a Standard Step Functions workflow. The workflow confirms the object still exists and writes error-only logs for 14 days. |
 | Local stage workstation | Keeps render latency off the network | Not an AWS resource. A future least-privilege integration retrieves a specifically approved version only. |
 
 The future managed plan requires the same explicit `deployment_mode=demo`,
@@ -86,6 +87,12 @@ slice, plus `enable_virtual_production_assets=true` and an explicit existing
 host, NAT gateway, or always-on application service. Do not apply it without a
 separate time-boxed budget and a teardown decision; S3 storage/version history
 and DynamoDB backup retention can accrue cost while retained.
+
+The intake workflow is intentionally an **object-existence/metadata** check,
+not a claim that AWS has cooked or rendered an Unreal environment. The locally
+verified workflow supplies the Processing → Validated → Approved for Stage
+contract today. A future approved build job can consume the intake event to
+run Unreal package validation before it writes the approval record.
 
 ## Recording-friendly recovery view
 

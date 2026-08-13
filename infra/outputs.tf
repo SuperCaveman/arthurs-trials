@@ -18,7 +18,7 @@ output "planned_resource_boundary" {
     local.database_enabled ? ["private encrypted PostgreSQL RDS instance"] : [],
     local.results_worker_enabled ? ["private ECS/Fargate results-worker service at desired count zero"] : [],
     local.observability_enabled ? ["CloudWatch worker dashboard and five alarms"] : [],
-    local.virtual_production_assets_enabled ? ["versioned private S3 virtual-production asset bucket and on-demand approval metadata table"] : [],
+    local.virtual_production_assets_enabled ? ["versioned private S3 virtual-production asset bucket, approval metadata table, and serverless intake-validation workflow"] : [],
   )
 }
 
@@ -80,4 +80,9 @@ output "virtual_production_approval_table_name" {
 output "virtual_production_stage_read_role_arn" {
   description = "Optional least-privilege role the local stage would assume to retrieve approved assets; null in local mode."
   value       = local.virtual_production_assets_enabled ? module.virtual_production_assets[0].stage_read_role_arn : null
+}
+
+output "virtual_production_asset_validation_state_machine_arn" {
+  description = "Optional serverless structural intake-validation workflow ARN; null in local mode."
+  value       = local.virtual_production_assets_enabled ? module.virtual_production_assets[0].asset_validation_state_machine_arn : null
 }

@@ -28,5 +28,15 @@ assert.match(module, /\$\{aws_s3_bucket\.asset_versions\.arn\}\/approved\/\*/);
 assert.match(module, /"dynamodb:GetItem"/);
 assert.doesNotMatch(module, /"s3:PutObject"|"dynamodb:PutItem"/);
 assert.match(main, /virtual_production_stage_trusted_principal_arn is required/);
+assert.match(module, /resource "aws_s3_bucket_notification" "asset_versions"[\s\S]*?eventbridge\s+=\s+true/);
+assert.match(module, /resource "aws_cloudwatch_event_rule" "incoming_asset_upload"/);
+assert.match(module, /"aws\.s3"/);
+assert.match(module, /prefix\s+=\s+"incoming\/"/);
+assert.match(module, /resource "aws_sfn_state_machine" "asset_validation"/);
+assert.match(module, /type\s+=\s+"STANDARD"/);
+assert.match(module, /arn:aws:states:::aws-sdk:s3:headObject/);
+assert.match(module, /resource "aws_cloudwatch_log_group" "asset_validation"[\s\S]*?retention_in_days\s+=\s+14/);
+assert.match(module, /resource "aws_cloudwatch_event_target" "incoming_asset_validation"/);
+assert.match(module, /"states:StartExecution"/);
 
-console.log('Verified: virtual-production storage is private, versioned, recoverable, approval-tracked, stage-read-only, and default-off.');
+console.log('Verified: virtual-production storage is private, versioned, recoverable, approval-tracked, intake-validated, stage-read-only, and default-off.');

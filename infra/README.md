@@ -70,8 +70,10 @@ Set `enable_virtual_production_assets=true` only for an approved virtual-
 production demo window, with an existing
 `virtual_production_stage_trusted_principal_arn`. That optional slice creates a
 private versioned S3 asset bucket, on-demand DynamoDB stage-approval metadata
-table, and a read-only approved-asset role assumable only by that named
-identity. It creates no GPU/render host, NAT gateway, or always-on service. See the
+table, a read-only approved-asset role assumable only by that named identity,
+and an EventBridge-to-Step-Functions intake workflow for `incoming/*` upload
+metadata checks. It creates no GPU/render host, NAT gateway, or always-on
+service. See the
 [virtual-production foundation](../docs/VIRTUAL_PRODUCTION_FOUNDATION.md) for
 the local-stage boundary, archive/recovery behavior, and teardown considerations.
 
