@@ -113,6 +113,24 @@ AWS template maps it to a federated approval identity, an auditable DynamoDB
 record, and a separate read-only stage role. No identity, record, object, or
 stage workstation exists in AWS.
 
+## Production status/audit proof
+
+The local audit ledger accepts approval and rollback records, produces a stable
+SHA-256 event ID, and appends each state change exactly once. Replaying the
+same record is classified as a duplicate rather than expanding the audit trail:
+
+```powershell
+node ./scripts/Run-VirtualProductionAuditLedger.mjs `
+  --ledger ./logs/virtual-production/production-audit.jsonl `
+  --event ./logs/virtual-production/Castle_Set_v12-approval.json `
+  --event ./logs/virtual-production/Castle_Set_rollback.json
+```
+
+This proves the status-return path locally. In a managed production design,
+the approval metadata table and structured CloudWatch logs preserve the same
+audit fields; EventBridge can route status events to additional systems. No
+table, log group, event bus, or notification resource has been deployed.
+
 ## Recording-friendly recovery view
 
 After generating the local workflow and rollback JSON, create one static view

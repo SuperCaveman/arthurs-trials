@@ -62,6 +62,9 @@ jobs:
       - name: Verify virtual-production approval authorization
         run: node scripts/Test-VirtualProductionApproval.mjs
 
+      - name: Verify virtual-production audit ledger
+        run: node scripts/Test-VirtualProductionAuditLedger.mjs
+
       - name: Validate virtual-production Terraform contract
         run: node scripts/Test-VirtualProductionTerraformContract.mjs
 
