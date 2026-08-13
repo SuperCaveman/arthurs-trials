@@ -104,6 +104,12 @@ variable "virtual_production_stage_trusted_principal_arn" {
   default     = ""
 }
 
+variable "virtual_production_production_id" {
+  description = "Production namespace isolated by the virtual-production asset/approval slice; required only when that slice is enabled."
+  type        = string
+  default     = "arthurs-trials-demo"
+}
+
 variable "observability_alarm_actions" {
   description = "Existing alarm action ARNs (for example, an approved SNS topic). Empty creates no notification service."
   type        = list(string)

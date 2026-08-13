@@ -3,6 +3,11 @@ variable "name_prefix" {
   type        = string
 }
 
+variable "production_id" {
+  description = "Production namespace this asset/approval slice may serve."
+  type        = string
+}
+
 variable "stage_trusted_principal_arn" {
   description = "Existing IAM principal allowed to assume the read-only stage asset role."
   type        = string

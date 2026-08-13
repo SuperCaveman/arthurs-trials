@@ -128,7 +128,7 @@ data "aws_iam_policy_document" "stage_asset_read" {
       "s3:GetObjectVersion",
       "s3:GetObjectVersionTagging",
     ]
-    resources = ["${aws_s3_bucket.asset_versions.arn}/approved/*"]
+    resources = ["${aws_s3_bucket.asset_versions.arn}/approved/productions/${var.production_id}/*"]
   }
 
   statement {

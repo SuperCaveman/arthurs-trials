@@ -113,6 +113,11 @@ resource "terraform_data" "managed_demo_gate" {
     }
 
     precondition {
+      condition     = !var.enable_virtual_production_assets || can(regex("^[a-z0-9-]{3,64}$", var.virtual_production_production_id))
+      error_message = "virtual_production_production_id must be a lowercase production identifier when virtual-production assets are enabled."
+    }
+
+    precondition {
       condition     = !var.enable_github_actions_oidc || trimspace(var.github_actions_oidc_provider_arn) != ""
       error_message = "github_actions_oidc_provider_arn is required when enable_github_actions_oidc=true."
     }
@@ -235,6 +240,7 @@ module "virtual_production_assets" {
   source = "./modules/virtual-production-assets"
 
   name_prefix                 = "arthurs-trials-${var.deployment_mode}"
+  production_id               = var.virtual_production_production_id
   stage_trusted_principal_arn = var.virtual_production_stage_trusted_principal_arn
   tags                        = local.common_tags
 }

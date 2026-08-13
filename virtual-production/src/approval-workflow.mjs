@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { assetVersionId } from './asset-pipeline.mjs';
+import { assetVersionId, productionAssetPrefix } from './asset-pipeline.mjs';
 
 const defaultApprovers = new Set(['stage-supervisor', 'production-manager']);
 
@@ -22,12 +22,12 @@ export function createStageApproval({ manifest, approvedBy, allowedApprovers = d
       approvedBy,
       approvedAt: new Date().toISOString(),
       manifestSha256,
-      deploymentInstruction: `Retrieve approved/${versionId}/ using the stage read-only role.`,
+      deploymentInstruction: `Retrieve approved/${productionAssetPrefix(manifest)}/${versionId}/ using the stage read-only role.`,
     },
     productionMapping: {
       authentication: 'Federated workstation or production identity assumes a scoped approval role',
-      authorization: 'DynamoDB approval record accepts only authorized production approvers',
-      delivery: 'Local stage assumes a read-only role for the approved object version',
+      authorization: 'DynamoDB approval record is namespaced by production and accepts only authorized production approvers',
+      delivery: 'Local stage assumes a read-only role for its production-specific approved object prefix',
       audit: 'Immutable version ID, manifest digest, actor, and timestamp are retained',
     },
     scope: 'Local authorization simulation only. No authenticated identity, IAM role, DynamoDB record, S3 object, or stage workstation is deployed.',

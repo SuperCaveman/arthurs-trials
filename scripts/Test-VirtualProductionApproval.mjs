@@ -8,7 +8,7 @@ const manifest = { production: 'arthurs-trials-demo', assetName: 'Castle_Set', v
 const approval = createStageApproval({ manifest, approvedBy: 'stage-supervisor' });
 assert.equal(approval.versionId, 'Castle_Set_v12');
 assert.equal(approval.approval.status, 'Approved for Stage');
-assert.match(approval.approval.deploymentInstruction, /approved\/Castle_Set_v12/);
+assert.match(approval.approval.deploymentInstruction, /approved\/productions\/arthurs-trials-demo\/Castle_Set_v12/);
 assert.match(approval.scope, /No authenticated identity/i);
 assert.throws(() => createStageApproval({ manifest, approvedBy: 'remote-artist' }), /not authorized/);
 

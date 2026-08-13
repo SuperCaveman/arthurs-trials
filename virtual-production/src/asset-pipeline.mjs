@@ -17,6 +17,11 @@ export function assetVersionId(manifest) {
   return `${manifest.assetName}_v${manifest.version}`;
 }
 
+export function productionAssetPrefix(manifest) {
+  validateManifest(manifest);
+  return `productions/${manifest.production}`;
+}
+
 export function createAssetWorkflow(manifest, { approvedBy = 'portfolio-operator' } = {}) {
   const versionId = assetVersionId(manifest);
   const manifestDigest = createHash('sha256').update(JSON.stringify(manifest)).digest('hex');
@@ -31,7 +36,7 @@ export function createAssetWorkflow(manifest, { approvedBy = 'portfolio-operator
     mode: 'local-simulation',
     versionId,
     production: manifest.production,
-    asset: { package: manifest.source.package, manifestSha256: manifestDigest, estimatedBytes: manifest.checks.estimatedBytes },
+    asset: { package: manifest.source.package, manifestSha256: manifestDigest, estimatedBytes: manifest.checks.estimatedBytes, storagePrefix: productionAssetPrefix(manifest) },
     source: manifest.source,
     stageTarget: manifest.stageTarget,
     transitions,

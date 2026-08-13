@@ -8,6 +8,7 @@ const manifest = { production: 'arthurs-trials-demo', assetName: 'Castle_Set', v
 const workflow = createAssetWorkflow(manifest, { approvedBy: 'stage-supervisor' });
 assert.equal(workflow.versionId, 'Castle_Set_v12');
 assert.equal(workflow.currentStatus, 'Deployed');
+assert.equal(workflow.asset.storagePrefix, 'productions/arthurs-trials-demo');
 assert.deepEqual(workflow.transitions.map((transition) => transition.status), ['Uploaded', 'Processing', 'Validated', 'Approved for Stage', 'Deployed']);
 assert.match(workflow.scope, /No S3 bucket/i);
 const root = await mkdtemp(join(tmpdir(), 'arthurs-trials-vp-'));

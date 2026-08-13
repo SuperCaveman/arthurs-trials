@@ -113,6 +113,17 @@ AWS template maps it to a federated approval identity, an auditable DynamoDB
 record, and a separate read-only stage role. No identity, record, object, or
 stage workstation exists in AWS.
 
+## Production isolation
+
+Every workflow manifest carries a lowercase `production` identifier. Local
+approved delivery paths are namespaced as
+`approved/productions/<production>/<asset-version>/`; a rollback is rejected
+unless the production, asset name, and stage target all match. The optional
+Terraform foundation takes one production identifier per asset/approval slice
+and scopes the stage read role to that approved prefix only. A real multi-show
+platform would create a separate production slice/role and apply the same
+boundary rather than letting one stage identity read another show's content.
+
 ## Production status/audit proof
 
 The local audit ledger accepts approval and rollback records, produces a stable
