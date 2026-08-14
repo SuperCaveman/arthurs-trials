@@ -26,6 +26,8 @@ does not call AWS, push an image, or create an AWS resource.
   367 MB, with the GameLift Server SDK included in the packaged server.
 - The image was previously smoke-tested locally and exposes only the UDP game
   port.
+- A new 20-second local run stayed healthy under a one-vCPU/2-GiB cap, using
+  108.4 MiB at the startup sample. See the [budget baseline](evidence/LOCAL_GAMELIFT_CONTAINER_BUDGET.md).
 
 ## Explicit managed-demo approval gate
 
@@ -51,8 +53,8 @@ and [container-fleet guidance](https://docs.aws.amazon.com/gameliftservers/lates
 
 ## Resource sizing rule
 
-Do not guess the container group memory or vCPU limits. The local smoke test
-establishes packaging compatibility, not production capacity. Before the live
-fleet request, measure a short local server run and choose one conservative
-container-group limit; the fleet test then records the observed startup time,
-memory use, session limit, and teardown result.
+Do not extrapolate the startup sample into production capacity. The local
+baseline supports a conservative first single-container request of one vCPU and
+2048 MiB, but the managed fleet test must record the observed GameLift startup
+time, player admission, CPU/memory under a session, session limit, and teardown
+result before any capacity or autoscaling claim is made.
