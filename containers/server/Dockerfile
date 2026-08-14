@@ -34,4 +34,7 @@ USER arthurs
 EXPOSE 7777/udp
 
 ENTRYPOINT ["/opt/arthurs-trials/ArthursTrials/Binaries/Linux/ArthursTrialsServer"]
-CMD ["-port=7777", "-log"]
+# Managed GameLift supplies the service connection details at runtime. This
+# switch enables the Unreal lifecycle code that calls InitSDK/ProcessReady;
+# without it, GameLift correctly keeps the fleet in activation checks.
+CMD ["-port=7777", "-log", "-GameLiftEnabled"]

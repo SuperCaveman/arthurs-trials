@@ -79,6 +79,11 @@ image is verified locally, while an ECR push and managed GameLift fleet remain
 separate, explicit cost-approved actions. See the
 [managed GameLift container preflight](docs/MANAGED_GAMELIFT_CONTAINER_PREP.md).
 
+One short, recorded managed-container proof has now validated that exact path:
+a private ECR image, GameLift container group, one-instance managed fleet, and
+one active game session. It was torn down immediately after capture; see the
+[sanitized managed-hosting evidence](docs/evidence/MANAGED_GAMELIFT_CONTAINER_DEMO.md).
+
 The low-cost VPC, Cognito, and encrypted SQS/DLQ foundation has also been
 created, smoke-tested, and immediately destroyed in a time-boxed AWS window;
 the [sanitized evidence](docs/evidence/MANAGED_FOUNDATION_DEMO.md) records the
