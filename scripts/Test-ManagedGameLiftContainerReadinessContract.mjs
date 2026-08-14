@@ -17,5 +17,6 @@ assert.match(guide, /managed GameLift container fleet/i);
 assert.match(guide, /explicit\s+approval/i);
 assert.match(guide, /does not call AWS, push an image, or create an AWS resource/i);
 assert.match(dockerfile, /"-GameLiftEnabled"/);
+assert.match(dockerfile, /"-GameLiftRequirePlayerSession"/);
 
 console.log('Verified: managed GameLift container readiness is locally testable, starts the GameLift lifecycle, and cannot create AWS resources.');

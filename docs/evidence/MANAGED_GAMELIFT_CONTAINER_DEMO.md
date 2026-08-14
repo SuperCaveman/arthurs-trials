@@ -14,6 +14,15 @@ Scope: one short, single-region managed GameLift Servers container-fleet proof
   It was explicitly capped at one game-server container group per instance,
   and the capacity view reported one active, idle instance/container group.
 - A real one-player GameLift game session reached `ACTIVE` on port `7777`.
+- The default-off managed-fleet session API adapter created that session and
+  returned only the connection address, port, and caller's player-session
+  credential. It cannot create a fleet or image.
+- A staged Unreal client used that API-issued credential to join the managed
+  server. The local client log recorded `Welcomed by server`; no AWS credential
+  was placed in the client.
+- The final container image enabled GameLift player-session validation, so the
+  client-join proof exercised the same admission boundary as the local
+  GameLift Anywhere proof.
 - The managed fleet deployment and game-session console views were recorded
   with account, fleet, compute, session, and public-address identifiers
   redacted.
@@ -23,8 +32,10 @@ Scope: one short, single-region managed GameLift Servers container-fleet proof
 The first image ran the dedicated server without `-GameLiftEnabled`. GameLift
 correctly held that fleet in its Server SDK connectivity check because the
 process never called `InitSDK` and `ProcessReady`. The container entry point
-was corrected, a new immutable image tag and container group were used, and
-the replacement fleet reached `ACTIVE` and hosted the test session.
+was corrected, then the final proof image also enabled
+`-GameLiftRequirePlayerSession`. New immutable image tags and container groups
+were used for the corrections; the replacement fleet reached `ACTIVE`, hosted
+the test session, and accepted the staged-client join.
 
 This is useful evidence of an operational debugging boundary, not a claim
 that every container image is automatically GameLift-ready.

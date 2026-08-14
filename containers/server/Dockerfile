@@ -37,4 +37,4 @@ ENTRYPOINT ["/opt/arthurs-trials/ArthursTrials/Binaries/Linux/ArthursTrialsServe
 # Managed GameLift supplies the service connection details at runtime. This
 # switch enables the Unreal lifecycle code that calls InitSDK/ProcessReady;
 # without it, GameLift correctly keeps the fleet in activation checks.
-CMD ["-port=7777", "-log", "-GameLiftEnabled"]
+CMD ["-port=7777", "-log", "-GameLiftEnabled", "-GameLiftRequirePlayerSession"]
