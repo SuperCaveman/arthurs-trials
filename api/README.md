@@ -96,6 +96,26 @@ the Unreal client never receives AWS credentials. In an ECS task, the SDK uses
 the task role rather than a bundled CLI or stored key. Local Anywhere testing
 continues to use the workstation's existing AWS credential chain.
 
+## Managed GameLift fleet proof adapter (default off)
+
+`managed-fleet` repeats the recorded managed-container proof through the API:
+it calls `CreateGameSession`, waits for `ACTIVE`, creates one player-session
+credential, and returns only that caller's address, port, and credential. It
+does not create a fleet, container group, ECR image, or queue; it can only use
+a fleet that an explicitly approved demo has already created.
+
+```powershell
+$env:GAME_LIFT_ADAPTER = 'managed-fleet'
+$env:AWS_REGION = 'us-east-1'
+$env:GAME_LIFT_MANAGED_FLEET_ID = 'containerfleet-REPLACE_ME'
+npm start
+```
+
+This is a controlled integration-proof mode, not the production placement
+strategy. It is unit-tested with a local SDK mock and makes no AWS call unless
+you explicitly select it and provide a live fleet ID. For regional scale, use
+the latency-aware queue adapter below.
+
 ## Managed GameLift queue adapter (template only)
 
 `queue` is a separate, opt-in adapter for the managed hosting design. It calls

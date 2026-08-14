@@ -9,9 +9,12 @@ assert.match(api, /DescribeGameSessionPlacementCommand/);
 assert.match(api, /DesiredPlayerSessions/);
 assert.match(api, /PlayerLatencies/);
 assert.match(api, /PlacedPlayerSessions\?\.find/);
-assert.match(api, /GAME_LIFT_ADAPTER must be fake, anywhere, or queue/);
+assert.match(api, /createManagedFleetGameLiftAdapter/);
+assert.match(api, /GAME_LIFT_MANAGED_FLEET_ID/);
+assert.match(api, /GAME_LIFT_ADAPTER must be fake, anywhere, managed-fleet, or queue/);
 assert.match(api, /Measured latency is required for every party player/);
 assert.doesNotMatch(api, /execFile/);
 assert.doesNotMatch(api, /'gamelift', 'start-game-session-placement'/);
+assert.doesNotMatch(api, /CreateContainerFleetCommand/);
 
 console.log('Verified: the managed GameLift queue adapter uses the AWS SDK, submits party latency, and returns only the caller reservation from a fulfilled placement.');

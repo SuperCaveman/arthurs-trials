@@ -121,16 +121,20 @@ records a cancellation reason for support and metrics.
 
 The local API now exposes the client-facing boundary. It defaults to a fake
 adapter for unit and HTTP-contract tests, and its `anywhere` adapter uses the
-official GameLift AWS SDK only from the API process. A separately tested `queue` adapter
-uses `StartGameSessionPlacement`, waits for a fulfilled placement, and returns
-the caller's already-created GameLift player-session reservation. The existing
-scripts remain the local operator tools for starting and stopping the server
-process:
+official GameLift AWS SDK only from the API process. The default-off
+`managed-fleet` adapter repeats the single-fleet proof by creating a session,
+waiting for it to activate, and issuing only the caller's player-session
+credential. It is mock-tested and cannot create a fleet or container group.
+The separately tested `queue` adapter uses `StartGameSessionPlacement`, waits
+for a fulfilled placement, and returns the caller's already-created GameLift
+player-session reservation. The existing scripts remain the local operator
+tools for starting and stopping the server process:
 
 | Planned API responsibility | Local helper |
 | --- | --- |
 | Start a server process | `Start-GameLiftAnywhereLocal.ps1` |
 | Create a game session and reserve the caller's player slot | `api/src/server.mjs` with `GAME_LIFT_ADAPTER=anywhere` |
+| Repeat one approved managed-fleet session proof | `api/src/server.mjs` with `GAME_LIFT_ADAPTER=managed-fleet` |
 | End the session cleanly | `Stop-GameLiftAnywhereSession.ps1` |
 
 The Anywhere adapter has been exercised end-to-end against the local dedicated

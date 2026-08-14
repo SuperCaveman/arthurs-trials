@@ -332,6 +332,48 @@ export function createAnywhereGameLiftAdapter(environment = process.env, { clien
   };
 }
 
+// Direct managed-fleet placement is deliberately separate from the production
+// queue adapter below. It exists to make the single-fleet container proof
+// repeatable: the API creates one session, waits for GameLift to activate it,
+// and returns only the caller's player-session credential. It is disabled by
+// default and should not replace latency-aware queue placement at scale.
+export function createManagedFleetGameLiftAdapter(environment = process.env, { client } = {}) {
+  const region = requiredEnvironment('AWS_REGION', environment);
+  const fleetId = requiredEnvironment('GAME_LIFT_MANAGED_FLEET_ID', environment);
+  const gameLift = client ?? new GameLiftClient({ region });
+
+  return {
+    async createMatch({ playerId, maximumPlayerSessions, matchRequestId, party, xpAward }) {
+      const gameSession = (await sendGameLift(gameLift, new CreateGameSessionCommand({
+        FleetId: fleetId,
+        Name: `api-managed-${randomUUID()}`,
+        MaximumPlayerSessionCount: maximumPlayerSessions,
+        GameProperties: [
+          { Key: 'matchId', Value: matchRequestId },
+          { Key: 'participants', Value: party.join(',') },
+          { Key: 'xpAward', Value: String(xpAward) },
+        ],
+      }))).GameSession;
+
+      const activeGameSession = await waitForActiveGameSession({
+        gameSessionId: gameSession.GameSessionId,
+        client: gameLift,
+      });
+      const playerSession = (await sendGameLift(gameLift, new CreatePlayerSessionCommand({
+        GameSessionId: gameSession.GameSessionId,
+        PlayerId: playerId,
+      }))).PlayerSession;
+
+      return {
+        address: playerSession.IpAddress ?? activeGameSession.IpAddress,
+        port: playerSession.Port ?? activeGameSession.Port,
+        playerSessionId: playerSession.PlayerSessionId,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      };
+    },
+  };
+}
+
 async function waitForFulfilledPlacement({ placementId, client, sleepFn, timeoutMilliseconds }) {
   const deadline = Date.now() + timeoutMilliseconds;
   while (Date.now() < deadline) {
@@ -490,10 +532,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const storeName = process.env.SESSION_API_STORE ?? 'memory';
   const adapter = adapterName === 'anywhere'
     ? createAnywhereGameLiftAdapter()
-    : adapterName === 'queue'
-      ? createQueueGameLiftAdapter()
-      : createFakeGameLiftAdapter();
-  if (!['fake', 'anywhere', 'queue'].includes(adapterName)) throw new Error('GAME_LIFT_ADAPTER must be fake, anywhere, or queue.');
+    : adapterName === 'managed-fleet'
+      ? createManagedFleetGameLiftAdapter()
+      : adapterName === 'queue'
+        ? createQueueGameLiftAdapter()
+        : createFakeGameLiftAdapter();
+  if (!['fake', 'anywhere', 'managed-fleet', 'queue'].includes(adapterName)) throw new Error('GAME_LIFT_ADAPTER must be fake, anywhere, managed-fleet, or queue.');
   if (!['memory', 'file'].includes(storeName)) throw new Error('SESSION_API_STORE must be memory or file.');
   const authenticate = authMode === 'cognito'
     ? createCognitoJwtAuthenticator({

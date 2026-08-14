@@ -6,7 +6,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createFileMatchStore } from '../src/match-store.mjs';
-import { createCognitoJwtAuthenticator, createQueueGameLiftAdapter, createSessionApi } from '../src/server.mjs';
+import { createCognitoJwtAuthenticator, createManagedFleetGameLiftAdapter, createQueueGameLiftAdapter, createSessionApi } from '../src/server.mjs';
 
 async function startApi({ authenticate, store, createMatch } = {}) {
   let calls = 0;
@@ -178,6 +178,47 @@ test('queue adapter creates one latency-aware placement and returns only the cal
   assert.deepEqual(calls[0].input.DesiredPlayerSessions, [{ PlayerId: 'andrew' }, { PlayerId: 'arthur' }]);
   assert.deepEqual(calls[0].input.PlayerLatencies[0], { PlayerId: 'andrew', RegionIdentifier: 'us-east-1', LatencyInMilliseconds: 31 });
   assert.equal(calls.filter((command) => command.constructor.name === 'DescribeGameSessionPlacementCommand').length, 2);
+});
+
+test('managed-fleet proof adapter creates a session and returns only the caller credential', async () => {
+  const calls = [];
+  const adapter = createManagedFleetGameLiftAdapter({
+    AWS_REGION: 'us-east-1',
+    GAME_LIFT_MANAGED_FLEET_ID: 'containerfleet-demo',
+  }, {
+    client: {
+      async send(command) {
+        calls.push(command);
+        if (command.constructor.name === 'CreateGameSessionCommand') {
+          return { GameSession: { GameSessionId: 'gsess_demo' } };
+        }
+        if (command.constructor.name === 'DescribeGameSessionsCommand') {
+          return { GameSessions: [{ Status: 'ACTIVE', IpAddress: '203.0.113.10', Port: 7777 }] };
+        }
+        if (command.constructor.name === 'CreatePlayerSessionCommand') {
+          return { PlayerSession: { PlayerSessionId: 'psess_andrew', IpAddress: '203.0.113.10', Port: 7777 } };
+        }
+        throw new Error(`Unexpected GameLift command: ${command.constructor.name}`);
+      },
+    },
+  });
+
+  const connection = await adapter.createMatch({
+    playerId: 'andrew',
+    maximumPlayerSessions: 4,
+    matchRequestId: 'mrq_2b989bf7-8040-418c-b311-00d5bbc71d61',
+    party: ['andrew', 'arthur'],
+    xpAward: 125,
+  });
+
+  assert.deepEqual({ address: connection.address, port: connection.port, playerSessionId: connection.playerSessionId }, {
+    address: '203.0.113.10', port: 7777, playerSessionId: 'psess_andrew',
+  });
+  assert.equal(calls[0].constructor.name, 'CreateGameSessionCommand');
+  assert.equal(calls[0].input.FleetId, 'containerfleet-demo');
+  assert.equal(calls[0].input.Location, undefined);
+  assert.equal(calls[1].constructor.name, 'DescribeGameSessionsCommand');
+  assert.equal(calls[2].constructor.name, 'CreatePlayerSessionCommand');
 });
 
 test('exposes an unauthenticated health endpoint without match data', async (t) => {
