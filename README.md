@@ -74,6 +74,16 @@ measured server limits into defensible session-buffer and fleet-capacity
 decisions. Its checked-in inputs are clearly labelled assumptions until a
 managed Linux soak test is approved.
 
+The next managed-hosting step is deliberately preflighted: the Linux server
+image is verified locally, while an ECR push and managed GameLift fleet remain
+separate, explicit cost-approved actions. See the
+[managed GameLift container preflight](docs/MANAGED_GAMELIFT_CONTAINER_PREP.md).
+
+The low-cost VPC, Cognito, and encrypted SQS/DLQ foundation has also been
+created, smoke-tested, and immediately destroyed in a time-boxed AWS window;
+the [sanitized evidence](docs/evidence/MANAGED_FOUNDATION_DEMO.md) records the
+boundary without claiming persistent hosted infrastructure.
+
 The local, idempotent proof for the future asynchronous reward path is in the
 [match-results contract](docs/MATCH_RESULTS_CONTRACT.md).
 

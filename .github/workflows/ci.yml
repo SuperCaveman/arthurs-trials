@@ -80,6 +80,9 @@ jobs:
       - name: Validate GameLift container template
         run: node scripts/Test-GameLiftContainerTemplate.mjs
 
+      - name: Validate managed GameLift container preflight boundary
+        run: node scripts/Test-ManagedGameLiftContainerReadinessContract.mjs
+
       - name: Validate Linux server image recipe
         run: node scripts/Test-LinuxServerContainerRecipe.mjs
 
