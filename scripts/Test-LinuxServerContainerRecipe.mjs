@@ -17,6 +17,9 @@ assert.match(
   dockerfile,
   /ENTRYPOINT \["\/opt\/arthurs-trials\/ArthursTrials\/Binaries\/Linux\/ArthursTrialsServer"\]/
 );
-assert.match(dockerfile, /CMD \["-port=7777", "-log"\]/);
+assert.match(
+  dockerfile,
+  /CMD \["-port=7777", "-log", "-GameLiftEnabled", "-GameLiftRequirePlayerSession"\]/
+);
 
-console.log('Verified: Linux server image recipe uses a non-root process and the UDP 7777 server contract.');
+console.log('Verified: Linux server image recipe uses a non-root process, UDP 7777, and GameLift player-session admission.');
